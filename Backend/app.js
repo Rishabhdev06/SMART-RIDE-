@@ -3,6 +3,10 @@ dotenv.config();
 const express = require('express');
 const cors = require('cors');
 const app = express();
+app.use(cors({
+  origin: 'https://smart-ride-three.vercel.app',
+  credentials: true
+}));
 const cookieParser = require('cookie-parser');
 const connectToDb = require('./db/db');
 const userRoutes = require('./routes/user.routes');
