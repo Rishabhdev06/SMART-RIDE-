@@ -65,7 +65,17 @@ module.exports.loginCaptain = async (req, res, next) => {
 
     res.status(200).json({ token, captain });
 }
-
+catch (err) {
+        if (err.name === 'ValidationError') {
+            const messages = Object.values(err.errors).map(e => e.message);
+            return res.status(400).json({ errors: messages });
+        }
+        if (err.code === 11000) {
+            return res.status(400).json({ errors: ['Email already registered'] });
+        }
+        console.error(err);
+        return res.status(500).json({ errors: ['Something went wrong. Please try again.'] });
+    }
 module.exports.getCaptainProfile = async (req, res, next) => {
     res.status(200).json({ captain: req.captain });
 }
