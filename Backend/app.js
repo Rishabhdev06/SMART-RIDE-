@@ -1,5 +1,8 @@
 const dotenv = require('dotenv');
 dotenv.config();
+PORT=4000
+MONGODB_URI=mongodb+srv://rishabhgithub06_db_user:gY4ytrhif3zlTB7P@cluster0.wn3o3c4.mongodb.net/smart-ride?appName=Cluster0
+JWT_SECRET=your_jwt_secret_here
 const express = require('express');
 const cors = require('cors');
 const app = express();
