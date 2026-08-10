@@ -1,24 +1,27 @@
 const axios = require('axios');
 const captainModel = require('../models/captain.model');
 
+const GEOAPIFY_KEY = process.env.GEOAPIFY_API_KEY;
+
 module.exports.getAddressCoordinate = async (address) => {
-    const apiKey = process.env.GOOGLE_MAPS_API;
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
+    if (!address) {
+        throw new Error('Address is required');
+    }
+
+    const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(address)}&apiKey=${GEOAPIFY_KEY}`;
 
     try {
         const response = await axios.get(url);
-        if (response.data.status === 'OK') {
-            const location = response.data.results[ 0 ].geometry.location;
-            return {
-                ltd: location.lat,
-                lng: location.lng
-            };
-        } else {
-            throw new Error('Unable to fetch coordinates');
+        const feature = response.data.features && response.data.features[ 0 ];
+
+        if (!feature) {
+            throw new Error('Unable to find coordinates for this address');
         }
+
+        const [ lng, ltd ] = feature.geometry.coordinates;
+        return { ltd, lng };
     } catch (error) {
-        console.error(error);
-        throw error;
+        throw new Error('Unable to fetch coordinates');
     }
 }
 
@@ -27,66 +30,56 @@ module.exports.getDistanceTime = async (origin, destination) => {
         throw new Error('Origin and destination are required');
     }
 
-    const apiKey = process.env.GOOGLE_MAPS_API;
+    const originCoords = await module.exports.getAddressCoordinate(origin);
+    const destCoords = await module.exports.getAddressCoordinate(destination);
 
-    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}&key=${apiKey}`;
+    const url = `https://api.geoapify.com/v1/routing?waypoints=${originCoords.ltd},${originCoords.lng}|${destCoords.ltd},${destCoords.lng}&mode=drive&apiKey=${GEOAPIFY_KEY}`;
 
     try {
-
-
         const response = await axios.get(url);
-        if (response.data.status === 'OK') {
+        const feature = response.data.features && response.data.features[ 0 ];
 
-            if (response.data.rows[ 0 ].elements[ 0 ].status === 'ZERO_RESULTS') {
-                throw new Error('No routes found');
-            }
-
-            return response.data.rows[ 0 ].elements[ 0 ];
-        } else {
-            throw new Error('Unable to fetch distance and time');
+        if (!feature) {
+            throw new Error('Unable to find a route between these locations');
         }
 
-    } catch (err) {
-        console.error(err);
-        throw err;
+        return {
+            distance: { value: feature.properties.distance },   // meters
+            duration: { value: feature.properties.time }         // seconds
+        };
+    } catch (error) {
+        throw new Error('Unable to fetch distance and time');
     }
 }
 
 module.exports.getAutoCompleteSuggestions = async (input) => {
     if (!input) {
-        throw new Error('query is required');
+        throw new Error('Query is required');
     }
 
-    const apiKey = process.env.GOOGLE_MAPS_API;
-    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&key=${apiKey}`;
+    const url = `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(input)}&apiKey=${GEOAPIFY_KEY}`;
 
     try {
         const response = await axios.get(url);
-        if (response.data.status === 'OK') {
-            return response.data.predictions.map(prediction => prediction.description).filter(value => value);
-        } else {
-            throw new Error('Unable to fetch suggestions');
-        }
-    } catch (err) {
-        console.error(err);
-        throw err;
+        const suggestions = (response.data.features || [])
+            .map(f => f.properties.formatted)
+            .filter(Boolean);
+
+        return suggestions;
+    } catch (error) {
+        throw new Error('Unable to fetch suggestions');
     }
 }
 
 module.exports.getCaptainsInTheRadius = async (ltd, lng, radius) => {
-
-    // radius in km
-
-
     const captains = await captainModel.find({
         location: {
             $geoWithin: {
-                $centerSphere: [ [ ltd, lng ], radius / 6371 ]
+                $centerSphere: [ [ lng, ltd ], radius / 6371 ]
             }
         }
     });
 
     return captains;
-
-
 }
+ 
