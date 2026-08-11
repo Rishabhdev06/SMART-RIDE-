@@ -1,3 +1,11 @@
+const rideService = require('../services/ride.service');
+const { validationResult } = require('express-validator');
+const mapService = require('../services/maps.service');
+const subscriptionService = require('../services/subscription.service');
+const { sendMessageToSocketId } = require('../socket');
+const rideModel = require('../models/ride.model');
+
+
 module.exports.createRide = async (req, res) => {
 
     const errors = validationResult(req);
@@ -140,4 +148,291 @@ module.exports.createRide = async (req, res) => {
 
     }
 };
-    
+
+// ======================================================
+// GET ESTIMATED VALUE
+// ======================================================
+module.exports.getEstimatedValue = async (req, res) => {
+
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+
+        return res.status(400).json({
+            errors: errors.array()
+        });
+
+    }
+
+    const { pickup, destination } = req.query;
+
+    try {
+
+        const subscription =
+            await subscriptionService.getActiveSubscription(
+                req.user._id
+            );
+
+
+        if (!subscription) {
+
+            return res.status(400).json({
+                message:
+                    'No active subscription. Please subscribe to a monthly plan first.'
+            });
+
+        }
+
+
+        const estimatedValue =
+            await rideService.getEstimatedValue(
+                pickup,
+                destination,
+                subscription.plan.vehicleType
+            );
+
+
+        return res.status(200).json({
+
+            estimatedValue,
+
+            vehicleType:
+                subscription.plan.vehicleType,
+
+            ridesRemaining:
+                subscription.ridesRemaining
+
+        });
+
+    } catch (err) {
+
+        return res.status(500).json({
+            message: err.message
+        });
+
+    }
+};
+
+
+// ======================================================
+// CONFIRM RIDE
+// ======================================================
+module.exports.confirmRide = async (req, res) => {
+
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+
+        return res.status(400).json({
+            errors: errors.array()
+        });
+
+    }
+
+    const { rideId } = req.body;
+
+    try {
+
+        const ride =
+            await rideService.confirmRide({
+                rideId,
+                captain: req.captain
+            });
+
+
+        console.log(
+            '✅ RIDE CONFIRMED BY CAPTAIN:',
+            req.captain._id
+        );
+
+
+        // Notify user
+        if (ride.user && ride.user.socketId) {
+
+            sendMessageToSocketId(
+                ride.user.socketId,
+                {
+                    event: 'ride-confirmed',
+                    data: ride
+                }
+            );
+
+        }
+
+
+        return res.status(200).json(ride);
+
+    } catch (err) {
+
+        console.error('❌ CONFIRM RIDE ERROR:', err);
+
+        return res.status(500).json({
+            message: err.message
+        });
+
+    }
+};
+
+
+// ======================================================
+// START RIDE
+// ======================================================
+module.exports.startRide = async (req, res) => {
+
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+
+        return res.status(400).json({
+            errors: errors.array()
+        });
+
+    }
+
+    const { rideId, otp } = req.query;
+
+    try {
+
+        const ride =
+            await rideService.startRide({
+                rideId,
+                otp,
+                captain: req.captain
+            });
+
+
+        if (ride.user && ride.user.socketId) {
+
+            sendMessageToSocketId(
+                ride.user.socketId,
+                {
+                    event: 'ride-started',
+                    data: ride
+                }
+            );
+
+        }
+
+
+        return res.status(200).json(ride);
+
+    } catch (err) {
+
+        console.error('❌ START RIDE ERROR:', err);
+
+        return res.status(500).json({
+            message: err.message
+        });
+
+    }
+};
+
+
+// ======================================================
+// END RIDE
+// ======================================================
+module.exports.endRide = async (req, res) => {
+
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+
+        return res.status(400).json({
+            errors: errors.array()
+        });
+
+    }
+
+    const { rideId } = req.body;
+
+    try {
+
+        const ride =
+            await rideService.endRide({
+                rideId,
+                captain: req.captain
+            });
+
+
+        if (ride.user && ride.user.socketId) {
+
+            sendMessageToSocketId(
+                ride.user.socketId,
+                {
+                    event: 'ride-ended',
+                    data: ride
+                }
+            );
+
+        }
+
+
+        return res.status(200).json(ride);
+
+    } catch (err) {
+
+        console.error('❌ END RIDE ERROR:', err);
+
+        return res.status(500).json({
+            message: err.message
+        });
+
+    }
+};
+
+
+// ======================================================
+// CANCEL RIDE
+// ======================================================
+module.exports.cancelRide = async (req, res) => {
+
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+
+        return res.status(400).json({
+            errors: errors.array()
+        });
+
+    }
+
+    const { rideId } = req.body;
+
+    try {
+
+        const ride =
+            await rideService.cancelRide({
+                rideId,
+                user: req.user
+            });
+
+
+        if (ride.captain && ride.captain.socketId) {
+
+            sendMessageToSocketId(
+                ride.captain.socketId,
+                {
+                    event: 'ride-cancelled',
+                    data: ride
+                }
+            );
+
+        }
+
+
+        return res.status(200).json(ride);
+
+    } catch (err) {
+
+        console.error('❌ CANCEL RIDE ERROR:', err);
+
+        return res.status(400).json({
+            message: err.message
+        });
+
+    }
+};
+     
+
+         
+
