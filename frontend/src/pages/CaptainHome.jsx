@@ -202,66 +202,37 @@ const CaptainHome = () => {
     // ======================================================
     // RECEIVE NEW RIDE
     // ======================================================
+
     useEffect(() => {
 
-        if (!socket) {
-            return
-        }
+    const handleNewRide = (data) => {
+
+        console.log('');
+        console.log('🚕🚕🚕 NEW RIDE RECEIVED 🚕🚕🚕');
+        console.log(data);
+
+        setRide(data);
+        setRidePopupPanel(true);
+
+    };
 
 
-        const handleNewRide = (data) => {
-
-            console.log('');
-            console.log(
-                '===================================='
-            );
-
-            console.log(
-                '🚕🚕🚕 NEW RIDE RECEIVED 🚕🚕🚕'
-            );
-
-            console.log(
-                'Ride data:',
-                data
-            );
-
-            console.log(
-                '===================================='
-            );
+    socket.on(
+        'new-ride',
+        handleNewRide
+    );
 
 
-            setRide(data)
+    return () => {
 
-            setRidePopupPanel(true)
-
-        }
-
-
-        console.log(
-            '👂 Listening for new-ride events'
-        )
-
-
-        socket.on(
+        socket.off(
             'new-ride',
             handleNewRide
-        )
+        );
 
+    };
 
-        return () => {
-
-            console.log(
-                '🧹 Removing new-ride listener'
-            )
-
-            socket.off(
-                'new-ride',
-                handleNewRide
-            )
-
-        }
-
-    }, [socket])
+}, [socket]);
 
 
     // ======================================================
