@@ -3,14 +3,21 @@ const userModel = require('./models/user.model');
 const captainModel = require('./models/captain.model');
 
 let io;
-
+const allowedOrigins = (process.env.CLIENT_URL || '*')
+    .split(',')
+    .map(origin => origin.trim().replace(/\/$/, ''));
 function initializeSocket(server) {
     io = socketIo(server, {
         cors: {
-            origin: 'https://smart-ride-three.vercel.app/',
+            origin: (origin, callback) => {
+                if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin.replace(/\/$/, ''))) {
+                    callback(null, true);
+                } else {
+                    callback(new Error(`Origin ${origin} not allowed by CORS`));
+                }
+            },
             methods: [ 'GET', 'POST' ],
-             credentials: true
-        }
+            credentials: true
     });
     io.on('connection', (socket) => {
         console.log(`Client connected: ${socket.id}`);
