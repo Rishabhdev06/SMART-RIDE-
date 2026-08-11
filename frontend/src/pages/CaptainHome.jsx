@@ -23,32 +23,41 @@ const CaptainHome = () => {
     const { socket } = useContext(SocketContext)
     const { captain } = useContext(CaptainDataContext)
 
-    useEffect(() => {
+   useEffect(() => {
+    const sendJoin = () => {
         socket.emit('join', {
             userId: captain._id,
             userType: 'captain'
         })
-        const updateLocation = () => {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(position => {
+    }
 
-                    socket.emit('update-location-captain', {
-                        userId: captain._id,
-                        location: {
-                            ltd: position.coords.latitude,
-                            lng: position.coords.longitude
-                        }
-                    })
+    // Re-join on every connect, including reconnects after a dropped socket
+    socket.on('connect', sendJoin)
+    if (socket.connected) sendJoin()
+
+    const updateLocation = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(position => {
+
+                socket.emit('update-location-captain', {
+                    userId: captain._id,
+                    location: {
+                        ltd: position.coords.latitude,
+                        lng: position.coords.longitude
+                    }
                 })
-            }
+            })
         }
+    }
 
-        const locationInterval = setInterval(updateLocation, 10000)
-        updateLocation()
+    const locationInterval = setInterval(updateLocation, 10000)
+    updateLocation()
 
-        // return () => clearInterval(locationInterval)
-    }, [])
-
+    return () => {
+        socket.off('connect', sendJoin)
+        clearInterval(locationInterval)
+    }
+}, [])
     socket.on('new-ride', (data) => {
 
         setRide(data)
