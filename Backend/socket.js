@@ -7,7 +7,7 @@ let io;
 function initializeSocket(server) {
     io = socketIo(server, {
         cors: {
-            origin: '*',
+            origin: 'https://smart-ride-three.vercel.app/',
             methods: [ 'GET', 'POST' ],
              credentials: true
         }
