@@ -7,6 +7,7 @@ const rideModel = require('../models/ride.model');
 
 
 module.exports.createRide = async (req, res) => {
+    module.exports.createRide = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
@@ -18,22 +19,36 @@ module.exports.createRide = async (req, res) => {
         const ride = await rideService.createRide({ user: req.user._id, pickup, destination });
         res.status(201).json(ride);
 
-        const pickupCoordinates = await mapService.getAddressCoordinate(pickup);
+        // Everything below happens after the response has already been sent
+        // to the user, so failures here must never try to send another
+        // response - just log and bail out.
+        try {
+            const pickupCoordinates = await mapService.getAddressCoordinate(pickup);
 
-        const captainsInRadius = await mapService.getCaptainsInTheRadius(pickupCoordinates.ltd, pickupCoordinates.lng, 2);
+            const captainsInRadius = await mapService.getCaptainsInTheRadius(pickupCoordinates.ltd, pickupCoordinates.lng, 2);
 
-        ride.otp = ""
+            ride.otp = ""
 
-        const rideWithUser = await rideModel.findOne({ _id: ride._id }).populate('user').populate('subscription');
+            const rideWithUser = await rideModel.findOne({ _id: ride._id }).populate('user').populate('subscription');
 
-        captainsInRadius.map(captain => {
+            if (!captainsInRadius.length) {
+                console.log(`No captains found within radius for ride ${ride._id}`);
+            }
 
-            sendMessageToSocketId(captain.socketId, {
-                event: 'new-ride',
-                data: rideWithUser
+            captainsInRadius.forEach(captain => {
+                if (!captain.socketId) {
+                    console.log(`Captain ${captain._id} has no active socket connection, skipping`);
+                    return;
+                }
+
+                sendMessageToSocketId(captain.socketId, {
+                    event: 'new-ride',
+                    data: rideWithUser
+                })
             })
-
-        })
+        } catch (notifyErr) {
+            console.log('Failed to notify nearby captains:', notifyErr);
+        }
 
     } catch (err) {
 
@@ -41,6 +56,7 @@ module.exports.createRide = async (req, res) => {
         return res.status(400).json({ message: err.message });
     }
 
+};
 };
 
 module.exports.getEstimatedValue = async (req, res) => {
