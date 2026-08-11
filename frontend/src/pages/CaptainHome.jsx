@@ -1,146 +1,492 @@
-import React, { useRef, useState } from 'react'
+import React, {
+    useRef,
+    useState,
+    useEffect,
+    useContext
+} from 'react'
+
 import { Link } from 'react-router-dom'
+
 import CaptainDetails from '../components/CaptainDetails'
 import RidePopUp from '../components/RidePopUp'
+
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
+
 import ConfirmRidePopUp from '../components/ConfirmRidePopUp'
-import { useEffect, useContext } from 'react'
+
 import { SocketContext } from '../context/SocketContext'
 import { CaptainDataContext } from '../context/CapatainContext'
+
 import axios from 'axios'
+
 import LiveTracking from '../components/LiveTracking'
+
 
 const CaptainHome = () => {
 
-    const [ ridePopupPanel, setRidePopupPanel ] = useState(false)
-    const [ confirmRidePopupPanel, setConfirmRidePopupPanel ] = useState(false)
+    const [ridePopupPanel, setRidePopupPanel] =
+        useState(false)
 
-    const ridePopupPanelRef = useRef(null)
-    const confirmRidePopupPanelRef = useRef(null)
-    const [ ride, setRide ] = useState(null)
+    const [confirmRidePopupPanel, setConfirmRidePopupPanel] =
+        useState(false)
 
-    const { socket } = useContext(SocketContext)
-    const { captain } = useContext(CaptainDataContext)
+    const ridePopupPanelRef =
+        useRef(null)
 
-   useEffect(() => {
-    const sendJoin = () => {
-        socket.emit('join', {
-            userId: captain._id,
-            userType: 'captain'
-        })
-    }
+    const confirmRidePopupPanelRef =
+        useRef(null)
 
-    // Re-join on every connect, including reconnects after a dropped socket
-    socket.on('connect', sendJoin)
-    if (socket.connected) sendJoin()
+    const [ride, setRide] =
+        useState(null)
 
-    const updateLocation = () => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(position => {
 
-                socket.emit('update-location-captain', {
-                    userId: captain._id,
-                    location: {
-                        ltd: position.coords.latitude,
-                        lng: position.coords.longitude
-                    }
-                })
-            })
+    const { socket } =
+        useContext(SocketContext)
+
+    const { captain } =
+        useContext(CaptainDataContext)
+
+
+    // ======================================================
+    // SOCKET CONNECTION + CAPTAIN JOIN + LOCATION
+    // ======================================================
+    useEffect(() => {
+
+        if (!captain?._id) {
+            console.log(
+                '❌ Captain data not available yet'
+            )
+
+            return
         }
-    }
 
-    const locationInterval = setInterval(updateLocation, 10000)
-    updateLocation()
 
-    return () => {
-        socket.off('connect', sendJoin)
-        clearInterval(locationInterval)
-    }
-}, [])
-    socket.on('new-ride', (data) => {
+        console.log(
+            '🚕 Captain Home loaded:',
+            captain._id
+        )
 
-        setRide(data)
-        setRidePopupPanel(true)
 
-    })
+        // ==================================================
+        // JOIN SOCKET
+        // ==================================================
+        const sendJoin = () => {
 
+            console.log(
+                '🚕 CAPTAIN JOINING SOCKET:',
+                captain._id
+            )
+
+            socket.emit('join', {
+
+                userId: captain._id,
+
+                userType: 'captain'
+
+            })
+
+        }
+
+
+        // If socket already connected
+        if (socket.connected) {
+
+            sendJoin()
+
+        }
+
+
+        // If socket connects/reconnects
+        socket.on(
+            'connect',
+            sendJoin
+        )
+
+
+        // ==================================================
+        // UPDATE CAPTAIN LOCATION
+        // ==================================================
+        const updateLocation = () => {
+
+            if (!navigator.geolocation) {
+
+                console.log(
+                    '❌ Geolocation is not supported'
+                )
+
+                return
+            }
+
+
+            navigator.geolocation.getCurrentPosition(
+
+                (position) => {
+
+                    const location = {
+
+                        ltd:
+                            position.coords.latitude,
+
+                        lng:
+                            position.coords.longitude
+
+                    }
+
+
+                    console.log(
+                        '📍 Sending captain location:',
+                        location
+                    )
+
+
+                    socket.emit(
+                        'update-location-captain',
+                        {
+
+                            userId:
+                                captain._id,
+
+                            location
+
+                        }
+                    )
+
+                },
+
+                (error) => {
+
+                    console.log(
+                        '❌ LOCATION ERROR:',
+                        error.message
+                    )
+
+                }
+
+            )
+
+        }
+
+
+        // Send immediately
+        updateLocation()
+
+
+        // Send every 10 seconds
+        const locationInterval =
+            setInterval(
+                updateLocation,
+                10000
+            )
+
+
+        // ==================================================
+        // CLEANUP
+        // ==================================================
+        return () => {
+
+            socket.off(
+                'connect',
+                sendJoin
+            )
+
+            clearInterval(
+                locationInterval
+            )
+
+        }
+
+    }, [socket, captain?._id])
+
+
+    // ======================================================
+    // RECEIVE NEW RIDE
+    // ======================================================
+    useEffect(() => {
+
+        if (!socket) {
+            return
+        }
+
+
+        const handleNewRide = (data) => {
+
+            console.log('');
+            console.log(
+                '===================================='
+            );
+
+            console.log(
+                '🚕🚕🚕 NEW RIDE RECEIVED 🚕🚕🚕'
+            );
+
+            console.log(
+                'Ride data:',
+                data
+            );
+
+            console.log(
+                '===================================='
+            );
+
+
+            setRide(data)
+
+            setRidePopupPanel(true)
+
+        }
+
+
+        console.log(
+            '👂 Listening for new-ride events'
+        )
+
+
+        socket.on(
+            'new-ride',
+            handleNewRide
+        )
+
+
+        return () => {
+
+            console.log(
+                '🧹 Removing new-ride listener'
+            )
+
+            socket.off(
+                'new-ride',
+                handleNewRide
+            )
+
+        }
+
+    }, [socket])
+
+
+    // ======================================================
+    // CONFIRM RIDE
+    // ======================================================
     async function confirmRide() {
 
-        const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/rides/confirm`, {
+        try {
 
-            rideId: ride._id,
-            captainId: captain._id,
+            console.log(
+                '🚕 Confirming ride:',
+                ride?._id
+            )
 
 
-        }, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-        })
+            const response =
+                await axios.post(
 
-        setRidePopupPanel(false)
-        setConfirmRidePopupPanel(true)
+                    `${import.meta.env.VITE_BASE_URL}/rides/confirm`,
+
+                    {
+                        rideId: ride._id
+                    },
+
+                    {
+                        headers: {
+
+                            Authorization:
+                                `Bearer ${localStorage.getItem('token')}`
+
+                        }
+
+                    }
+
+                )
+
+
+            console.log(
+                '✅ Ride confirmed:',
+                response.data
+            )
+
+
+            setRidePopupPanel(false)
+
+            setConfirmRidePopupPanel(true)
+
+        } catch (error) {
+
+            console.error(
+                '❌ Failed to confirm ride:',
+                error
+            )
+
+        }
 
     }
 
 
-    useGSAP(function () {
-        if (ridePopupPanel) {
-            gsap.to(ridePopupPanelRef.current, {
-                transform: 'translateY(0)'
-            })
-        } else {
-            gsap.to(ridePopupPanelRef.current, {
-                transform: 'translateY(100%)'
-            })
-        }
-    }, [ ridePopupPanel ])
+    // ======================================================
+    // RIDE POPUP ANIMATION
+    // ======================================================
+    useGSAP(
+        function () {
 
-    useGSAP(function () {
-        if (confirmRidePopupPanel) {
-            gsap.to(confirmRidePopupPanelRef.current, {
-                transform: 'translateY(0)'
-            })
-        } else {
-            gsap.to(confirmRidePopupPanelRef.current, {
-                transform: 'translateY(100%)'
-            })
-        }
-    }, [ confirmRidePopupPanel ])
+            if (ridePopupPanel) {
 
+                gsap.to(
+                    ridePopupPanelRef.current,
+                    {
+                        transform:
+                            'translateY(0)'
+                    }
+                )
+
+            } else {
+
+                gsap.to(
+                    ridePopupPanelRef.current,
+                    {
+                        transform:
+                            'translateY(100%)'
+                    }
+                )
+
+            }
+
+        },
+        [ridePopupPanel]
+    )
+
+
+    // ======================================================
+    // CONFIRM RIDE POPUP ANIMATION
+    // ======================================================
+    useGSAP(
+        function () {
+
+            if (confirmRidePopupPanel) {
+
+                gsap.to(
+                    confirmRidePopupPanelRef.current,
+                    {
+                        transform:
+                            'translateY(0)'
+                    }
+                )
+
+            } else {
+
+                gsap.to(
+                    confirmRidePopupPanelRef.current,
+                    {
+                        transform:
+                            'translateY(100%)'
+                    }
+                )
+
+            }
+
+        },
+        [confirmRidePopupPanel]
+    )
+
+
+    // ======================================================
+    // UI
+    // ======================================================
     return (
+
         <div className='h-screen'>
+
             <div className='fixed p-6 top-0 flex items-center justify-between w-screen z-10'>
-                <div className='font-bold text-xl tracking-tight'>Smart Ride</div>
-                <Link to='/captain/logout' className=' h-10 w-10 bg-white flex items-center justify-center rounded-full'>
+
+                <div className='font-bold text-xl tracking-tight'>
+                    Smart Ride
+                </div>
+
+
+                <Link
+                    to='/captain/logout'
+                    className='h-10 w-10 bg-white flex items-center justify-center rounded-full'
+                >
+
                     <i className="text-lg font-medium ri-logout-box-r-line"></i>
+
                 </Link>
+
             </div>
+
+
             <div className='h-3/5'>
+
                 <LiveTracking />
 
             </div>
+
+
             <div className='h-2/5 p-6'>
+
                 <CaptainDetails />
+
             </div>
-            <div ref={ridePopupPanelRef} className='fixed w-full z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-12'>
+
+
+            {/* ==============================================
+                NEW RIDE POPUP
+            ============================================== */}
+
+            <div
+                ref={ridePopupPanelRef}
+                className='fixed w-full z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-12'
+            >
+
                 <RidePopUp
+
                     ride={ride}
-                    setRidePopupPanel={setRidePopupPanel}
-                    setConfirmRidePopupPanel={setConfirmRidePopupPanel}
-                    confirmRide={confirmRide}
+
+                    setRidePopupPanel={
+                        setRidePopupPanel
+                    }
+
+                    setConfirmRidePopupPanel={
+                        setConfirmRidePopupPanel
+                    }
+
+                    confirmRide={
+                        confirmRide
+                    }
+
                 />
+
             </div>
-            <div ref={confirmRidePopupPanelRef} className='fixed w-full h-screen z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-12'>
+
+
+            {/* ==============================================
+                CONFIRMED RIDE POPUP
+            ============================================== */}
+
+            <div
+                ref={confirmRidePopupPanelRef}
+                className='fixed w-full h-screen z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-12'
+            >
+
                 <ConfirmRidePopUp
+
                     ride={ride}
-                    setConfirmRidePopupPanel={setConfirmRidePopupPanel} setRidePopupPanel={setRidePopupPanel} />
+
+                    setConfirmRidePopupPanel={
+                        setConfirmRidePopupPanel
+                    }
+
+                    setRidePopupPanel={
+                        setRidePopupPanel
+                    }
+
+                />
+
             </div>
+
         </div>
+
     )
+
 }
 
-export default CaptainHome
 
-      
+export default CaptainHome
