@@ -58,25 +58,62 @@ const Home = () => {
     }
 }, [ user ])
     useEffect(() => {
-        axios.get(`${import.meta.env.VITE_BASE_URL}/subscriptions/me`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        })
-            .then(res => setSubscription(res.data))
-            .catch(() => setSubscription(null))
-            .finally(() => setSubscriptionLoading(false))
-    }, [])
 
-    socket.on('ride-confirmed', ride => {
+    const handleRideConfirmed = (ride) => {
 
-        setVehicleFound(false)
-        setWaitingForDriver(true)
-        setRide(ride)
-    })
+        console.log('');
+        console.log('🚕 RIDE CONFIRMED');
+        console.log('Ride:', ride);
 
-    socket.on('ride-started', ride => {
-        setWaitingForDriver(false)
-        navigate('/riding', { state: { ride } })
-    })
+        setVehicleFound(false);
+        setWaitingForDriver(true);
+        setRide(ride);
+
+    };
+
+
+    const handleRideStarted = (ride) => {
+
+        console.log('🚕 RIDE STARTED');
+
+        setWaitingForDriver(false);
+
+        navigate(
+            '/riding',
+            {
+                state: { ride }
+            }
+        );
+
+    };
+
+
+    socket.on(
+        'ride-confirmed',
+        handleRideConfirmed
+    );
+
+    socket.on(
+        'ride-started',
+        handleRideStarted
+    );
+
+
+    return () => {
+
+        socket.off(
+            'ride-confirmed',
+            handleRideConfirmed
+        );
+
+        socket.off(
+            'ride-started',
+            handleRideStarted
+        );
+
+    };
+
+}, [socket, navigate]);
 
 
     const handlePickupChange = async (e) => {
