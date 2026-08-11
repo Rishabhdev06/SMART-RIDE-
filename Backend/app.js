@@ -23,7 +23,22 @@ connectToDb().then(() => {
     planService.ensureDefaultPlans().catch(err => console.log(err));
 });
 
-app.use(cors());
+const allowedOrigins = (process.env.CLIENT_URL || '*')
+    .split(',')
+    .map(origin => origin.trim().replace(/\/$/, ''));
+
+const corsOptions = {
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin.replace(/\/$/, ''))) {
+            callback(null, true);
+        } else {
+            callback(new Error(`Origin ${origin} not allowed by CORS`));
+        }
+    },
+    credentials: true
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
