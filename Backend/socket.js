@@ -3,38 +3,54 @@ const userModel = require('./models/user.model');
 const captainModel = require('./models/captain.model');
 
 let io;
+
 const allowedOrigins = (process.env.CLIENT_URL || '*')
     .split(',')
     .map(origin => origin.trim().replace(/\/$/, ''));
+
 function initializeSocket(server) {
     io = socketIo(server, {
         cors: {
             origin: (origin, callback) => {
-                if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin.replace(/\/$/, ''))) {
+                if (
+                    !origin ||
+                    allowedOrigins.includes('*') ||
+                    allowedOrigins.includes(origin.replace(/\/$/, ''))
+                ) {
                     callback(null, true);
                 } else {
                     callback(new Error(`Origin ${origin} not allowed by CORS`));
                 }
             },
-            methods: [ 'GET', 'POST' ],
+            methods: ['GET', 'POST'],
             credentials: true
+        }
     });
+
     io.on('connection', (socket) => {
         console.log(`Client connected: ${socket.id}`);
+
         socket.on('join', async (data) => {
             const { userId, userType } = data;
 
             if (userType === 'user') {
-                await userModel.findByIdAndUpdate(userId, { socketId: socket.id });
+                await userModel.findByIdAndUpdate(userId, {
+                    socketId: socket.id
+                });
             } else if (userType === 'captain') {
-                await captainModel.findByIdAndUpdate(userId, { socketId: socket.id });
+                await captainModel.findByIdAndUpdate(userId, {
+                    socketId: socket.id
+                });
             }
         });
+
         socket.on('update-location-captain', async (data) => {
             const { userId, location } = data;
 
             if (!location || !location.ltd || !location.lng) {
-                return socket.emit('error', { message: 'Invalid location data' });
+                return socket.emit('error', {
+                    message: 'Invalid location data'
+                });
             }
 
             await captainModel.findByIdAndUpdate(userId, {
@@ -52,14 +68,21 @@ function initializeSocket(server) {
 }
 
 const sendMessageToSocketId = (socketId, messageObject) => {
-
-console.log(messageObject);
+    console.log(messageObject);
 
     if (io) {
-        io.to(socketId).emit(messageObject.event, messageObject.data);
+        io.to(socketId).emit(
+            messageObject.event,
+            messageObject.data
+        );
     } else {
         console.log('Socket.io not initialized.');
     }
-}
+};
 
-module.exports = { initializeSocket, sendMessageToSocketId };
+module.exports = {
+    initializeSocket,
+    sendMessageToSocketId
+};
+     
+
