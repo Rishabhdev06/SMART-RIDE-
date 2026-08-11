@@ -1,7 +1,8 @@
 import React from 'react'
 
 const WaitingForDriver = (props) => {
-
+console.log('🚕 WaitingForDriver RIDE:', props.ride)
+console.log('🔐 WaitingForDriver OTP:', props.ride?.otp)
     return (
         <div>
 
