@@ -43,7 +43,9 @@ const Home = () => {
     const { user } = useContext(UserDataContext)
     const { subscription, setSubscription } = useContext(SubscriptionDataContext)
 
-  useEffect(() => {
+ useEffect(() => {
+    if (!user || !user._id) return
+
     const sendJoin = () => {
         socket.emit("join", { userType: "user", userId: user._id })
     }
