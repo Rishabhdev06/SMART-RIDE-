@@ -43,10 +43,18 @@ const Home = () => {
     const { user } = useContext(UserDataContext)
     const { subscription, setSubscription } = useContext(SubscriptionDataContext)
 
-    useEffect(() => {
+  useEffect(() => {
+    const sendJoin = () => {
         socket.emit("join", { userType: "user", userId: user._id })
-    }, [ user ])
+    }
 
+    socket.on('connect', sendJoin)
+    if (socket.connected) sendJoin()
+
+    return () => {
+        socket.off('connect', sendJoin)
+    }
+}, [ user ])
     useEffect(() => {
         axios.get(`${import.meta.env.VITE_BASE_URL}/subscriptions/me`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
