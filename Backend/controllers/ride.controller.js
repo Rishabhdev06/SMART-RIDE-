@@ -463,11 +463,8 @@ module.exports.confirmRide = async (req, res) => {
 // ======================================================
 // START RIDE
 // ======================================================
-
 async function startRide() {
-
     try {
-
         console.log('🚕 STARTING RIDE');
         console.log('Ride ID:', ride?._id);
         console.log('OTP:', otp);
@@ -476,48 +473,42 @@ async function startRide() {
             !!localStorage.getItem('token')
         );
 
-
         const response = await axios.get(
             `${import.meta.env.VITE_BASE_URL}/rides/start-ride`,
             {
                 params: {
-                    rideId: ride._id,
+                    rideId: ride?._id,
                     otp: otp
                 },
-
                 headers: {
-                    Authorization:
-                        `Bearer ${localStorage.getItem('token')}`
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
                 }
             }
         );
-
 
         console.log(
             '✅ RIDE STARTED:',
             response.data
         );
 
+        // Update captain UI after successful start
+        setConfirmRidePopupPanel(false);
+        setVehicleFound(false);
+        setRidePopupPanel(false);
+
+        // If you have a CaptainRiding page:
+        // navigate('/captain-riding', {
+        //     state: { ride: response.data }
+        // });
 
     } catch (error) {
-
-        console.error(
-            '❌ START RIDE FAILED'
-        );
-
-        console.error(
-            'Status:',
-            error.response?.status
-        );
-
-        console.error(
-            'Backend:',
-            error.response?.data
-        );
-
+        console.error('❌ START RIDE FAILED');
+        console.error('Status:', error.response?.status);
+        console.error('Backend:', error.response?.data);
+        console.error('Full error:', error);
     }
-
 }
+
 
         // ==================================================
         // NOTIFY USER THAT RIDE STARTED
