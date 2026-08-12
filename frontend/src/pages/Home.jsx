@@ -306,81 +306,41 @@ const Home = () => {
     // RECEIVE RIDE EVENTS
     // =====================================================
 
-    useEffect(() => {
+   useEffect(() => {
 
-        if (!socket) {
-            return
-        }
+    const handleRideConfirmed = (ride) => {
 
+        console.log('');
+        console.log('======================================');
+        console.log('🚕 RIDE-CONFIRMED RECEIVED BY USER');
+        console.log('Ride:', ride);
+        console.log('OTP:', ride?.otp);
+        console.log('Captain:', ride?.captain);
+        console.log('======================================');
 
-        // -----------------------------------------------
-        // CAPTAIN CONFIRMED RIDE
-        // -----------------------------------------------
+        setRide(ride);
+        setVehicleFound(false);
+        setWaitingForDriver(true);
 
-        const handleRideConfirmed = (rideData) => {
-
-            console.log('')
-            console.log(
-                '======================================'
-            )
-
-            console.log(
-                '🚕 USER RECEIVED RIDE CONFIRMED'
-            )
-
-            console.log(
-                'Complete ride:',
-                rideData
-            )
-
-            console.log(
-                'Ride ID:',
-                rideData?._id
-            )
-
-            console.log(
-                'Captain:',
-                rideData?.captain
-            )
-
-            console.log(
-                'OTP:',
-                rideData?.otp
-            )
-
-            console.log(
-                '======================================'
-            )
+    };
 
 
-            // Save complete ride
-            setRide(
-                rideData
-            )
+    socket.on(
+        'ride-confirmed',
+        handleRideConfirmed
+    );
 
 
-            // Hide "Looking for Captain"
-            setVehicleFound(
-                false
-            )
+    return () => {
 
+        socket.off(
+            'ride-confirmed',
+            handleRideConfirmed
+        );
 
-            // Hide other panels
-            setVehiclePanel(
-                false
-            )
+    };
 
-            setConfirmRidePanel(
-                false
-            )
-
-
-            // Show WaitingForDriver
-            setWaitingForDriver(
-                true
-            )
-
-        }
+}, [socket]);
 
 
         // -----------------------------------------------
