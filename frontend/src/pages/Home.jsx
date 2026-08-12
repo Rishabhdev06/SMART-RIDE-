@@ -12,7 +12,10 @@ import axios from 'axios'
 
 import 'remixicon/fonts/remixicon.css'
 
-import { Link, useNavigate } from 'react-router-dom'
+import {
+    Link,
+    useNavigate
+} from 'react-router-dom'
 
 import LocationSearchPanel from '../components/LocationSearchPanel'
 import VehiclePanel from '../components/VehiclePanel'
@@ -123,8 +126,7 @@ const Home = () => {
     const {
         subscription,
         setSubscription
-    } =
-        useContext(SubscriptionDataContext)
+    } = useContext(SubscriptionDataContext)
 
 
     // =====================================================
@@ -158,7 +160,6 @@ const Home = () => {
                     setSubscription(null)
 
                     return
-
                 }
 
 
@@ -169,16 +170,13 @@ const Home = () => {
 
                 const response =
                     await axios.get(
-
                         `${import.meta.env.VITE_BASE_URL}/subscriptions/me`,
-
                         {
                             headers: {
                                 Authorization:
                                     `Bearer ${token}`
                             }
                         }
-
                     )
 
 
@@ -201,7 +199,6 @@ const Home = () => {
                     error.response?.data ||
                     error.message
                 )
-
 
                 setSubscription(null)
 
@@ -227,21 +224,35 @@ const Home = () => {
     useEffect(() => {
 
         if (
-            !user ||
-            !user._id ||
-            !socket
+            !socket ||
+            !user?._id
         ) {
-
             return
-
         }
 
 
-        const sendJoin = () => {
+        const joinUser = () => {
 
             console.log(
-                '👤 USER JOINING SOCKET:',
+                '======================================'
+            )
+
+            console.log(
+                '👤 USER SOCKET CONNECTED'
+            )
+
+            console.log(
+                'Socket ID:',
+                socket.id
+            )
+
+            console.log(
+                'User ID:',
                 user._id
+            )
+
+            console.log(
+                '======================================'
             )
 
 
@@ -253,19 +264,26 @@ const Home = () => {
                 }
             )
 
+
+            console.log(
+                '✅ USER JOIN EVENT SENT'
+            )
+
         }
 
 
+        // Socket already connected
         if (socket.connected) {
 
-            sendJoin()
+            joinUser()
 
         }
 
 
+        // Socket connects later
         socket.on(
             'connect',
-            sendJoin
+            joinUser
         )
 
 
@@ -273,19 +291,19 @@ const Home = () => {
 
             socket.off(
                 'connect',
-                sendJoin
+                joinUser
             )
 
         }
 
     }, [
-        user,
-        socket
+        socket,
+        user
     ])
 
 
     // =====================================================
-    // RECEIVE RIDE CONFIRMED / STARTED
+    // RECEIVE RIDE EVENTS
     // =====================================================
 
     useEffect(() => {
@@ -299,44 +317,71 @@ const Home = () => {
         // CAPTAIN CONFIRMED RIDE
         // -----------------------------------------------
 
-      useEffect(() => {
+        const handleRideConfirmed = (rideData) => {
 
-    if (!socket) return;
+            console.log('')
+            console.log(
+                '======================================'
+            )
 
-    const handleRideConfirmed = (rideData) => {
+            console.log(
+                '🚕 USER RECEIVED RIDE CONFIRMED'
+            )
 
-        console.log("================================");
-        console.log("🚕 USER RECEIVED RIDE CONFIRMED");
-        console.log("RIDE:", rideData);
-        console.log("OTP:", rideData?.otp);
-        console.log("================================");
+            console.log(
+                'Complete ride:',
+                rideData
+            )
 
-        setRide(rideData);
+            console.log(
+                'Ride ID:',
+                rideData?._id
+            )
 
-        setVehicleFound(false);
+            console.log(
+                'Captain:',
+                rideData?.captain
+            )
 
-        setConfirmRidePanel(false);
+            console.log(
+                'OTP:',
+                rideData?.otp
+            )
 
-        setWaitingForDriver(true);
-    };
-
-
-    socket.on(
-        "ride-confirmed",
-        handleRideConfirmed
-    );
+            console.log(
+                '======================================'
+            )
 
 
-    return () => {
+            // Save complete ride
+            setRide(
+                rideData
+            )
 
-        socket.off(
-            "ride-confirmed",
-            handleRideConfirmed
-        );
 
-    };
+            // Hide "Looking for Captain"
+            setVehicleFound(
+                false
+            )
 
-}, [socket]);
+
+            // Hide other panels
+            setVehiclePanel(
+                false
+            )
+
+            setConfirmRidePanel(
+                false
+            )
+
+
+            // Show WaitingForDriver
+            setWaitingForDriver(
+                true
+            )
+
+        }
+
 
         // -----------------------------------------------
         // RIDE STARTED
@@ -367,17 +412,60 @@ const Home = () => {
         }
 
 
+        // -----------------------------------------------
+        // RIDE ENDED
+        // -----------------------------------------------
+
+        const handleRideEnded = (rideData) => {
+
+            console.log(
+                '🏁 RIDE ENDED:',
+                rideData
+            )
+
+            setWaitingForDriver(
+                false
+            )
+
+            setVehicleFound(
+                false
+            )
+
+            setRide(
+                null
+            )
+
+        }
+
+
+        // -----------------------------------------------
+        // REGISTER LISTENERS
+        // -----------------------------------------------
+
         socket.on(
             'ride-confirmed',
             handleRideConfirmed
         )
-
 
         socket.on(
             'ride-started',
             handleRideStarted
         )
 
+        socket.on(
+            'ride-ended',
+            handleRideEnded
+        )
+
+
+        console.log(
+            '✅ USER RIDE SOCKET LISTENERS REGISTERED'
+        )
+
+
+        // -----------------------------------------------
+        // CLEANUP
+        // -----------------------------------------------
 
         return () => {
 
@@ -386,10 +474,14 @@ const Home = () => {
                 handleRideConfirmed
             )
 
-
             socket.off(
                 'ride-started',
                 handleRideStarted
+            )
+
+            socket.off(
+                'ride-ended',
+                handleRideEnded
             )
 
         }
@@ -421,7 +513,6 @@ const Home = () => {
                 setPickupSuggestions([])
 
                 return
-
             }
 
 
@@ -429,9 +520,7 @@ const Home = () => {
 
                 const response =
                     await axios.get(
-
                         `${import.meta.env.VITE_BASE_URL}/maps/get-suggestions`,
-
                         {
                             params: {
                                 input: value
@@ -442,7 +531,6 @@ const Home = () => {
                                     `Bearer ${localStorage.getItem('token')}`
                             }
                         }
-
                     )
 
 
@@ -484,7 +572,6 @@ const Home = () => {
                 setDestinationSuggestions([])
 
                 return
-
             }
 
 
@@ -492,9 +579,7 @@ const Home = () => {
 
                 const response =
                     await axios.get(
-
                         `${import.meta.env.VITE_BASE_URL}/maps/get-suggestions`,
-
                         {
                             params: {
                                 input: value
@@ -505,7 +590,6 @@ const Home = () => {
                                     `Bearer ${localStorage.getItem('token')}`
                             }
                         }
-
                     )
 
 
@@ -543,7 +627,6 @@ const Home = () => {
     // =====================================================
 
     useGSAP(
-
         () => {
 
             if (panelOpen) {
@@ -585,9 +668,7 @@ const Home = () => {
             }
 
         },
-
         [panelOpen]
-
     )
 
 
@@ -596,7 +677,6 @@ const Home = () => {
     // =====================================================
 
     useGSAP(
-
         () => {
 
             if (vehiclePanel) {
@@ -622,9 +702,7 @@ const Home = () => {
             }
 
         },
-
         [vehiclePanel]
-
     )
 
 
@@ -633,7 +711,6 @@ const Home = () => {
     // =====================================================
 
     useGSAP(
-
         () => {
 
             if (confirmRidePanel) {
@@ -659,9 +736,7 @@ const Home = () => {
             }
 
         },
-
         [confirmRidePanel]
-
     )
 
 
@@ -670,7 +745,6 @@ const Home = () => {
     // =====================================================
 
     useGSAP(
-
         () => {
 
             if (vehicleFound) {
@@ -696,9 +770,7 @@ const Home = () => {
             }
 
         },
-
         [vehicleFound]
-
     )
 
 
@@ -707,7 +779,6 @@ const Home = () => {
     // =====================================================
 
     useGSAP(
-
         () => {
 
             if (waitingForDriver) {
@@ -716,7 +787,8 @@ const Home = () => {
                     waitingForDriverRef.current,
                     {
                         transform:
-                            'translateY(0)'
+                            'translateY(0)',
+                        duration: 0.4
                     }
                 )
 
@@ -726,16 +798,15 @@ const Home = () => {
                     waitingForDriverRef.current,
                     {
                         transform:
-                            'translateY(100%)'
+                            'translateY(100%)',
+                        duration: 0.4
                     }
                 )
 
             }
 
         },
-
         [waitingForDriver]
-
     )
 
 
@@ -749,7 +820,7 @@ const Home = () => {
 
 
         // -----------------------------------------------
-        // CHECK ACTIVE SUBSCRIPTION
+        // CHECK SUBSCRIPTION
         // -----------------------------------------------
 
         if (
@@ -762,16 +833,17 @@ const Home = () => {
             )
 
             return
-
         }
 
 
         // -----------------------------------------------
-        // CHECK RIDES REMAINING
+        // CHECK RIDES
         // -----------------------------------------------
 
         if (
-            Number(subscription.ridesRemaining) <= 0
+            Number(
+                subscription.ridesRemaining
+            ) <= 0
         ) {
 
             setBookingError(
@@ -779,7 +851,6 @@ const Home = () => {
             )
 
             return
-
         }
 
 
@@ -794,7 +865,6 @@ const Home = () => {
             )
 
             return
-
         }
 
 
@@ -809,7 +879,6 @@ const Home = () => {
             )
 
             return
-
         }
 
 
@@ -820,7 +889,6 @@ const Home = () => {
         setVehiclePanel(
             true
         )
-
 
         setPanelOpen(
             false
@@ -847,21 +915,17 @@ const Home = () => {
 
             const response =
                 await axios.post(
-
                     `${import.meta.env.VITE_BASE_URL}/rides/create`,
-
                     {
                         pickup,
                         destination
                     },
-
                     {
                         headers: {
                             Authorization:
                                 `Bearer ${localStorage.getItem('token')}`
                         }
                     }
-
                 )
 
 
@@ -918,10 +982,8 @@ const Home = () => {
 
 
             setBookingError(
-
                 error.response?.data?.message ||
                 'Could not book this ride.'
-
             )
 
 
@@ -945,9 +1007,9 @@ const Home = () => {
 
         <div className='h-screen relative overflow-hidden'>
 
-            {/* ============================================
+            {/* =================================================
                 LOGO
-            ============================================ */}
+            ================================================= */}
 
             <div className='absolute left-5 top-5 z-10 bg-white/90 rounded-lg px-3 py-1 font-bold text-lg tracking-tight'>
 
@@ -956,9 +1018,9 @@ const Home = () => {
             </div>
 
 
-            {/* ============================================
+            {/* =================================================
                 MAP
-            ============================================ */}
+            ================================================= */}
 
             <div className='h-screen w-screen'>
 
@@ -967,9 +1029,9 @@ const Home = () => {
             </div>
 
 
-            {/* ============================================
+            {/* =================================================
                 BOTTOM BOOKING PANEL
-            ============================================ */}
+            ================================================= */}
 
             <div className='flex flex-col justify-end h-screen absolute top-0 w-full'>
 
@@ -997,9 +1059,9 @@ const Home = () => {
                     </h4>
 
 
-                    {/* =====================================
+                    {/* =================================================
                         SUBSCRIPTION STATUS
-                    ===================================== */}
+                    ================================================= */}
 
                     {subscriptionLoading && (
 
@@ -1069,9 +1131,9 @@ const Home = () => {
                     )}
 
 
-                    {/* =====================================
+                    {/* =================================================
                         LOCATION FORM
-                    ===================================== */}
+                    ================================================= */}
 
                     <form
                         className='relative py-3'
@@ -1165,9 +1227,9 @@ const Home = () => {
                 </div>
 
 
-                {/* =========================================
+                {/* =================================================
                     LOCATION SEARCH PANEL
-                ========================================= */}
+                ================================================= */}
 
                 <div
                     ref={panelRef}
@@ -1209,9 +1271,9 @@ const Home = () => {
             </div>
 
 
-            {/* =============================================
+            {/* =================================================
                 VEHICLE PANEL
-            ============================================= */}
+            ================================================= */}
 
             <div
                 ref={vehiclePanelRef}
@@ -1237,9 +1299,9 @@ const Home = () => {
             </div>
 
 
-            {/* =============================================
+            {/* =================================================
                 CONFIRM RIDE PANEL
-            ============================================= */}
+            ================================================= */}
 
             <div
                 ref={confirmRidePanelRef}
@@ -1277,9 +1339,9 @@ const Home = () => {
             </div>
 
 
-            {/* =============================================
+            {/* =================================================
                 LOOKING FOR DRIVER
-            ============================================= */}
+            ================================================= */}
 
             <div
                 ref={vehicleFoundRef}
@@ -1309,13 +1371,13 @@ const Home = () => {
             </div>
 
 
-            {/* =============================================
+            {/* =================================================
                 WAITING FOR DRIVER
-            ============================================= */}
+            ================================================= */}
 
             <div
                 ref={waitingForDriverRef}
-                className='fixed w-full z-10 bottom-0 translate-y-full bg-white px-3 py-6 pt-12'
+                className='fixed w-full z-20 bottom-0 translate-y-full bg-white px-3 py-6 pt-12'
             >
 
                 <WaitingForDriver
@@ -1348,5 +1410,3 @@ const Home = () => {
 
 
 export default Home
-
-  
