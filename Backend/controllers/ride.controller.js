@@ -539,9 +539,9 @@ async function startRide() {
         }
 
 
-        return res.status(200).json(
+        return res.status(200).json({
             ride
-        );
+        });
 
 
     } catch (err) {
