@@ -299,49 +299,44 @@ const Home = () => {
         // CAPTAIN CONFIRMED RIDE
         // -----------------------------------------------
 
-        const handleRideConfirmed = (rideData) => {
+      useEffect(() => {
 
-            console.log('')
-            console.log(
-                '======================================'
-            )
-            console.log(
-                '🚕 RIDE CONFIRMED BY CAPTAIN'
-            )
-            console.log(
-                'Ride:',
-                rideData
-            )
-            console.log(
-                'OTP:',
-                rideData?.otp
-            )
-            console.log(
-                '======================================'
-            )
+    if (!socket) return;
 
+    const handleRideConfirmed = (rideData) => {
 
-            setRide(
-                rideData
-            )
+        console.log("================================");
+        console.log("🚕 USER RECEIVED RIDE CONFIRMED");
+        console.log("RIDE:", rideData);
+        console.log("OTP:", rideData?.otp);
+        console.log("================================");
+
+        setRide(rideData);
+
+        setVehicleFound(false);
+
+        setConfirmRidePanel(false);
+
+        setWaitingForDriver(true);
+    };
 
 
-            setVehicleFound(
-                false
-            )
+    socket.on(
+        "ride-confirmed",
+        handleRideConfirmed
+    );
 
 
-            setConfirmRidePanel(
-                false
-            )
+    return () => {
 
+        socket.off(
+            "ride-confirmed",
+            handleRideConfirmed
+        );
 
-            setWaitingForDriver(
-                true
-            )
+    };
 
-        }
-
+}, [socket]);
 
         // -----------------------------------------------
         // RIDE STARTED
