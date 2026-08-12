@@ -464,60 +464,60 @@ module.exports.confirmRide = async (req, res) => {
 // START RIDE
 // ======================================================
 
-module.exports.startRide = async (req, res) => {
-
-    const errors =
-        validationResult(req);
-
-
-    if (!errors.isEmpty()) {
-
-        return res.status(400).json({
-            errors: errors.array()
-        });
-
-    }
-
-
-    if (!req.captain || !req.captain._id) {
-
-        return res.status(401).json({
-            message: 'Captain authentication required.'
-        });
-
-    }
-
-
-    const {
-        rideId,
-        otp
-    } = req.query;
-
-
-    if (!rideId || !otp) {
-
-        return res.status(400).json({
-            message:
-                'Ride ID and OTP are required.'
-        });
-
-    }
-
+async function startRide() {
 
     try {
 
-        const ride =
-            await rideService.startRide({
+        console.log('🚕 STARTING RIDE');
+        console.log('Ride ID:', ride?._id);
+        console.log('OTP:', otp);
+        console.log(
+            'Token exists:',
+            !!localStorage.getItem('token')
+        );
 
-                rideId,
 
-                otp,
+        const response = await axios.get(
+            `${import.meta.env.VITE_BASE_URL}/rides/start-ride`,
+            {
+                params: {
+                    rideId: ride._id,
+                    otp: otp
+                },
 
-                captain:
-                    req.captain
+                headers: {
+                    Authorization:
+                        `Bearer ${localStorage.getItem('token')}`
+                }
+            }
+        );
 
-            });
 
+        console.log(
+            '✅ RIDE STARTED:',
+            response.data
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            '❌ START RIDE FAILED'
+        );
+
+        console.error(
+            'Status:',
+            error.response?.status
+        );
+
+        console.error(
+            'Backend:',
+            error.response?.data
+        );
+
+    }
+
+}
 
         // ==================================================
         // NOTIFY USER THAT RIDE STARTED
