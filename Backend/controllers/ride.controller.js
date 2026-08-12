@@ -7,29 +7,50 @@ const rideModel = require('../models/ride.model');
 
 
 module.exports.createRide = async (req, res) => {
-
     const errors = validationResult(req);
-
     if (!errors.isEmpty()) {
-        return res.status(400).json({
-            errors: errors.array()
-        });
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    if (!req.user || !req.user._id) {
+        return res.status(401).json({ message: 'Please log in again.' });
     }
 
     const { pickup, destination } = req.body;
 
+    let ride;
     try {
-
-        // Create the ride
-        const ride = await rideService.createRide({
-            user: req.user._id,
-            pickup,
-            destination
-        });
-
-        // Send response to user
+        ride = await rideService.createRide({ user: req.user._id, pickup, destination });
         res.status(201).json(ride);
+    } catch (err) {
+        console.log(err);
+        return res.status(400).json({ message: err.message });
+    }
 
+    // Notifying nearby captains happens after the response is already sent,
+    // so any failure here must never crash the process - just log it.
+    try {
+        const pickupCoordinates = await mapService.getAddressCoordinate(pickup);
+        const captainsInRadius = await mapService.getCaptainsInTheRadius(pickupCoordinates.ltd, pickupCoordinates.lng, 2);
+
+        const rideWithUser = await rideModel.findOne({ _id: ride._id }).populate('user').populate('subscription');
+
+        if (rideWithUser) {
+            rideWithUser.otp = "";
+
+            captainsInRadius.forEach(captain => {
+                if (captain && captain.socketId) {
+                    sendMessageToSocketId(captain.socketId, {
+                        event: 'new-ride',
+                        data: rideWithUser
+                    });
+                }
+            });
+        }
+    } catch (notifyErr) {
+        console.log('Failed to notify captains:', notifyErr);
+    }
+};
 
         // ============================================
         // FIND NEARBY CAPTAINS
