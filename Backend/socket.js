@@ -6,6 +6,10 @@ const captainModel = require('./models/captain.model');
 let io;
 
 
+// ======================================================
+// ALLOWED ORIGINS
+// ======================================================
+
 const allowedOrigins = (process.env.CLIENT_URL || '*')
     .split(',')
     .map(origin =>
@@ -16,6 +20,7 @@ const allowedOrigins = (process.env.CLIENT_URL || '*')
 // ======================================================
 // INITIALIZE SOCKET
 // ======================================================
+
 function initializeSocket(server) {
 
     io = socketIo(server, {
@@ -23,6 +28,9 @@ function initializeSocket(server) {
         cors: {
 
             origin: (origin, callback) => {
+
+                // Allow requests without an origin
+                // and allow all origins when CLIENT_URL = *
 
                 if (
                     !origin ||
@@ -35,6 +43,11 @@ function initializeSocket(server) {
                     callback(null, true);
 
                 } else {
+
+                    console.log(
+                        '❌ SOCKET CORS BLOCKED:',
+                        origin
+                    );
 
                     callback(
                         new Error(
@@ -58,77 +71,157 @@ function initializeSocket(server) {
     // ==================================================
     // NEW CLIENT CONNECTION
     // ==================================================
+
     io.on('connection', (socket) => {
 
         console.log('');
-        console.log('====================================');
+        console.log('======================================');
         console.log('🔌 CLIENT CONNECTED');
         console.log('Socket ID:', socket.id);
-        console.log('====================================');
+        console.log('======================================');
 
 
         // ==================================================
         // JOIN
         // ==================================================
+
         socket.on('join', async (data) => {
 
             try {
 
+                const {
+                    userId,
+                    userType
+                } = data || {};
+
+
                 console.log('');
-                console.log('🔌 JOIN REQUEST RECEIVED');
-                console.log('User ID:', data.userId);
-                console.log('User Type:', data.userType);
+                console.log('======================================');
+                console.log('🔌 JOIN REQUEST');
+                console.log('User ID:', userId);
+                console.log('User Type:', userType);
                 console.log('Socket ID:', socket.id);
-
-
-                const { userId, userType } = data;
+                console.log('======================================');
 
 
                 if (!userId || !userType) {
 
                     console.log(
-                        '❌ Invalid join data'
+                        '❌ INVALID JOIN DATA'
                     );
 
                     return;
+
                 }
 
 
+                // ==================================================
                 // USER
+                // ==================================================
+
                 if (userType === 'user') {
 
-                    await userModel.findByIdAndUpdate(
-                        userId,
-                        {
-                            socketId: socket.id
-                        }
-                    );
+                    const user =
+                        await userModel.findByIdAndUpdate(
+
+                            userId,
+
+                            {
+                                socketId: socket.id
+                            },
+
+                            {
+                                new: true
+                            }
+
+                        );
+
+
+                    if (!user) {
+
+                        console.log(
+                            '❌ USER NOT FOUND:',
+                            userId
+                        );
+
+                        return;
+
+                    }
 
 
                     console.log(
-                        '✅ USER SOCKET SAVED:',
-                        userId,
-                        socket.id
+                        '✅ USER SOCKET SAVED'
+                    );
+
+                    console.log(
+                        'User ID:',
+                        user._id
+                    );
+
+                    console.log(
+                        'Socket ID:',
+                        user.socketId
                     );
 
                 }
 
 
+                // ==================================================
                 // CAPTAIN
+                // ==================================================
+
                 else if (userType === 'captain') {
 
-                    await captainModel.findByIdAndUpdate(
-                        userId,
-                        {
-                            socketId: socket.id
-                        }
-                    );
+                    const captain =
+                        await captainModel.findByIdAndUpdate(
+
+                            userId,
+
+                            {
+                                socketId: socket.id
+                            },
+
+                            {
+                                new: true
+                            }
+
+                        );
+
+
+                    if (!captain) {
+
+                        console.log(
+                            '❌ CAPTAIN NOT FOUND:',
+                            userId
+                        );
+
+                        return;
+
+                    }
 
 
                     console.log(
-                        '🚕 CAPTAIN SOCKET SAVED:',
-                        userId,
-                        socket.id
+                        '🚕 CAPTAIN SOCKET SAVED'
+                    );
+
+                    console.log(
+                        'Captain ID:',
+                        captain._id
+                    );
+
+                    console.log(
+                        'Socket ID:',
+                        captain.socketId
+                    );
+
+                }
+
+
+                else {
+
+                    console.log(
+                        '❌ UNKNOWN USER TYPE:',
+                        userType
                     );
 
                 }
@@ -148,6 +241,7 @@ function initializeSocket(server) {
         // ==================================================
         // CAPTAIN LOCATION
         // ==================================================
+
         socket.on(
             'update-location-captain',
             async (data) => {
@@ -157,7 +251,7 @@ function initializeSocket(server) {
                     const {
                         userId,
                         location
-                    } = data;
+                    } = data || {};
 
 
                     if (
@@ -172,28 +266,43 @@ function initializeSocket(server) {
                             data
                         );
 
-                        return socket.emit(
-                            'error',
-                            {
-                                message:
-                                    'Invalid location data'
-                            }
-                        );
+                        return;
 
                     }
 
 
-                    await captainModel.findByIdAndUpdate(
-                        userId,
-                        {
-                            location: {
-                                ltd: location.ltd,
-                                lng: location.lng
+                    const captain =
+                        await captainModel.findByIdAndUpdate(
+
+                            userId,
+
+                            {
+                                location: {
+                                    ltd: location.ltd,
+                                    lng: location.lng
+                                },
+
+                                // Keep socket ID updated
+                                socketId: socket.id
                             },
 
-                            socketId: socket.id
-                        }
-                    );
+                            {
+                                new: true
+                            }
+
+                        );
+
+
+                    if (!captain) {
+
+                        console.log(
+                            '❌ CAPTAIN NOT FOUND FOR LOCATION:',
+                            userId
+                        );
+
+                        return;
+
+                    }
 
 
                     console.log(
@@ -218,12 +327,64 @@ function initializeSocket(server) {
         // ==================================================
         // DISCONNECT
         // ==================================================
+
         socket.on('disconnect', async () => {
 
+            console.log('');
+            console.log('======================================');
             console.log(
                 '🔌 CLIENT DISCONNECTED:',
                 socket.id
             );
+            console.log('======================================');
+
+
+            try {
+
+                // Remove this socket ID from user
+                await userModel.updateOne(
+
+                    {
+                        socketId: socket.id
+                    },
+
+                    {
+                        $unset: {
+                            socketId: 1
+                        }
+                    }
+
+                );
+
+
+                // Remove this socket ID from captain
+                await captainModel.updateOne(
+
+                    {
+                        socketId: socket.id
+                    },
+
+                    {
+                        $unset: {
+                            socketId: 1
+                        }
+                    }
+
+                );
+
+
+                console.log(
+                    '✅ SOCKET ID CLEANED FROM DATABASE'
+                );
+
+            } catch (error) {
+
+                console.error(
+                    '❌ DISCONNECT CLEANUP ERROR:',
+                    error
+                );
+
+            }
 
         });
 
@@ -233,58 +394,128 @@ function initializeSocket(server) {
 
 
 // ======================================================
-// SEND MESSAGE TO SOCKET
+// SEND MESSAGE TO SOCKET ID
 // ======================================================
+
 const sendMessageToSocketId = (
     socketId,
     messageObject
 ) => {
 
     console.log('');
-    console.log('====================================');
-    console.log('📨 SOCKET MESSAGE');
+    console.log('======================================');
+    console.log('📨 SENDING SOCKET MESSAGE');
     console.log('Socket ID:', socketId);
-    console.log('Event:', messageObject.event);
-    console.log('====================================');
+    console.log(
+        'Event:',
+        messageObject?.event
+    );
+    console.log(
+        'OTP:',
+        messageObject?.data?.otp
+    );
+    console.log('======================================');
 
+
+    // ==================================================
+    // SOCKET.IO NOT INITIALIZED
+    // ==================================================
 
     if (!io) {
 
         console.log(
-            '❌ Socket.io is NOT initialized'
+            '❌ SOCKET.IO IS NOT INITIALIZED'
         );
 
-        return;
+        return false;
 
     }
 
+
+    // ==================================================
+    // NO SOCKET ID
+    // ==================================================
 
     if (!socketId) {
 
         console.log(
-            '❌ No socket ID supplied'
+            '❌ NO SOCKET ID SUPPLIED'
         );
 
-        return;
+        return false;
 
     }
 
 
-    io.to(socketId).emit(
+    // ==================================================
+    // CHECK WHETHER SOCKET IS ACTUALLY CONNECTED
+    // ==================================================
+
+    const targetSocket =
+        io.sockets.sockets.get(socketId);
+
+
+    if (!targetSocket) {
+
+        console.log(
+            '❌ SOCKET IS NOT CURRENTLY CONNECTED:',
+            socketId
+        );
+
+        return false;
+
+    }
+
+
+    // ==================================================
+    // SEND EVENT
+    // ==================================================
+
+    targetSocket.emit(
+
         messageObject.event,
+
         messageObject.data
+
     );
 
+
+    console.log('');
+    console.log(
+        '✅ SOCKET EVENT ACTUALLY SENT'
+    );
 
     console.log(
-        '✅ SOCKET EVENT SENT'
+        'Event:',
+        messageObject.event
     );
 
+    console.log(
+        'Socket:',
+        socketId
+    );
+
+    console.log(
+        'OTP:',
+        messageObject.data?.otp
+    );
+
+    console.log('');
+
+
+    return true;
+
 };
 
+
+// ======================================================
+// EXPORT
+// ======================================================
 
 module.exports = {
+
     initializeSocket,
+
     sendMessageToSocketId
+
 };
-       
