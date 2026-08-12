@@ -238,59 +238,121 @@ const CaptainHome = () => {
     // ======================================================
     // CONFIRM RIDE
     // ======================================================
-    async function confirmRide() {
+   async function confirmRide() {
 
-        try {
-
-            console.log(
-                '🚕 Confirming ride:',
-                ride?._id
-            )
-
-
-            const response =
-                await axios.post(
-
-                    `${import.meta.env.VITE_BASE_URL}/rides/confirm`,
-
-                    {
-                        rideId: ride._id
-                    },
-
-                    {
-                        headers: {
-
-                            Authorization:
-                                `Bearer ${localStorage.getItem('token')}`
-
-                        }
-
-                    }
-
-                )
+    console.log('');
+    console.log('======================================');
+    console.log('🚕 CAPTAIN CLICKED ACCEPT');
+    console.log('Ride object:', ride);
+    console.log('Ride ID:', ride?._id);
+    console.log('======================================');
 
 
-            console.log(
-                '✅ Ride confirmed:',
-                response.data
-            )
+    if (!ride?._id) {
 
+        console.error(
+            '❌ Cannot confirm ride: ride ID is missing'
+        );
 
-            setRidePopupPanel(false)
-
-            setConfirmRidePopupPanel(true)
-
-        } catch (error) {
-
-            console.error(
-                '❌ Failed to confirm ride:',
-                error
-            )
-
-        }
+        return;
 
     }
 
+
+    try {
+
+        const token =
+            localStorage.getItem('token');
+
+
+        console.log(
+            '🔑 Captain token exists:',
+            !!token
+        );
+
+
+        if (!token) {
+
+            console.error(
+                '❌ Captain token is missing'
+            );
+
+            return;
+
+        }
+
+
+        // ==================================================
+        // CONFIRM RIDE API
+        // ==================================================
+
+        const response =
+            await axios.post(
+
+                `${import.meta.env.VITE_BASE_URL}/rides/confirm`,
+
+                {
+                    rideId: ride._id
+                },
+
+                {
+                    headers: {
+
+                        Authorization:
+                            `Bearer ${token}`
+
+                    }
+
+                }
+
+            );
+
+
+        console.log('');
+        console.log('======================================');
+        console.log('✅ RIDE CONFIRM API SUCCESS');
+        console.log('Response:', response.data);
+        console.log('Ride ID:', response.data?._id);
+        console.log('OTP:', response.data?.otp);
+        console.log('======================================');
+
+
+        // ==================================================
+        // CLOSE NEW RIDE POPUP
+        // ==================================================
+
+        setRidePopupPanel(false);
+
+
+        // ==================================================
+        // SHOW CONFIRM/WAITING PANEL ON CAPTAIN SIDE
+        // ==================================================
+
+        setConfirmRidePopupPanel(true);
+
+
+    } catch (error) {
+
+        console.error('');
+        console.error('======================================');
+        console.error('❌ CONFIRM RIDE FAILED');
+        console.error(
+            'Status:',
+            error.response?.status
+        );
+        console.error(
+            'Backend message:',
+            error.response?.data
+        );
+        console.error(
+            'Full error:',
+            error
+        );
+        console.error('======================================');
+
+    }
+
+}
 
     // ======================================================
     // RIDE POPUP ANIMATION
