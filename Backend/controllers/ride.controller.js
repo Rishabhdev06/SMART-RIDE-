@@ -339,55 +339,50 @@ module.exports.confirmRide = async (req, res) => {
         // CONFIRM RIDE THROUGH SERVICE
         // ==================================================
 
-        const ride =
-            await rideService.confirmRide({
+       module.exports.confirmRide = async ({
+    rideId,
+    captain
+}) => {
 
-                rideId,
+    if (!rideId || !captain) {
+        throw new Error('Ride ID and captain are required');
+    }
 
-                captain:
-                    req.captain
+    const ride = await rideModel
+        .findOneAndUpdate(
+            {
+                _id: rideId,
+                status: 'pending'
+            },
+            {
+                status: 'accepted',
+                captain: captain._id
+            },
+            {
+                new: true
+            }
+        )
+        .populate('user')
+        .populate('captain')
+        .populate('subscription');
 
-            });
-
-
-        console.log('');
-        console.log(
-            '======================================'
+    if (!ride) {
+        throw new Error(
+            'Ride not found or already accepted'
         );
+    }
 
-        console.log(
-            '🚕 CAPTAIN CONFIRMED RIDE'
-        );
+    console.log('======================================');
+    console.log('🚕 RIDE ACCEPTED');
+    console.log('Ride ID:', ride._id);
+    console.log('Captain:', ride.captain?._id);
+    console.log('User:', ride.user?._id);
+    console.log('User socket:', ride.user?.socketId);
+    console.log('OTP:', ride.otp);
+    console.log('======================================');
 
-        console.log(
-            'Ride ID:',
-            ride._id
-        );
-
-        console.log(
-            'User ID:',
-            ride.user?._id
-        );
-
-        console.log(
-            'USER SOCKET ID:',
-            ride.user?.socketId
-        );
-
-        console.log(
-            'Captain ID:',
-            ride.captain?._id
-        );
-
-        console.log(
-            'OTP:',
-            ride.otp
-        );
-
-        console.log(
-            '======================================'
-        );
-
+    return ride;
+};
 
         // ==================================================
         // SEND RIDE CONFIRMED TO USER
