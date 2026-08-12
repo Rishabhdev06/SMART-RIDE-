@@ -458,86 +458,79 @@ module.exports.confirmRide = async (req, res) => {
 // ======================================================
 // START RIDE
 // ======================================================
-async function startRide() {
-    try {
-        console.log('🚕 STARTING RIDE');
-        console.log('Ride ID:', ride?._id);
-        console.log('OTP:', otp);
-        console.log(
-            'Token exists:',
-            !!localStorage.getItem('token')
-        );
+module.exports.startRide = async (req, res) => {
 
-        const response = await axios.get(
-            `${import.meta.env.VITE_BASE_URL}/rides/start-ride`,
-            {
-                params: {
-                    rideId: ride?._id,
-                    otp: otp
-                },
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
-                }
-            }
-        );
+    const errors = validationResult(req);
 
-        console.log(
-            '✅ RIDE STARTED:',
-            response.data
-        );
-
-        // Update captain UI after successful start
-        setConfirmRidePopupPanel(false);
-        setVehicleFound(false);
-        setRidePopupPanel(false);
-
-        // If you have a CaptainRiding page:
-        // navigate('/captain-riding', {
-        //     state: { ride: response.data }
-        // });
-
-    } catch (error) {
-        console.error('❌ START RIDE FAILED');
-        console.error('Status:', error.response?.status);
-        console.error('Backend:', error.response?.data);
-        console.error('Full error:', error);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({
+            errors: errors.array()
+        });
     }
-}
 
+    try {
 
-        // ==================================================
-        // NOTIFY USER THAT RIDE STARTED
-        // ==================================================
+        if (!req.captain || !req.captain._id) {
+            return res.status(401).json({
+                message: 'Captain authentication required'
+            });
+        }
+
+        const { rideId, otp } = req.query;
+
+        console.log('======================================');
+        console.log('🚕 START RIDE REQUEST');
+        console.log('Ride ID:', rideId);
+        console.log('OTP:', otp);
+        console.log('Captain ID:', req.captain._id);
+        console.log('======================================');
+
+        if (!rideId || !otp) {
+            return res.status(400).json({
+                message: 'Ride ID and OTP are required'
+            });
+        }
+
+        const ride = await rideService.startRide({
+            rideId,
+            otp,
+            captain: req.captain
+        });
+
+        console.log('======================================');
+        console.log('✅ RIDE STARTED');
+        console.log('Ride ID:', ride._id);
+        console.log('Status:', ride.status);
+        console.log('OTP:', ride.otp);
+        console.log('User ID:', ride.user?._id);
+        console.log(
+            'User Socket:',
+            ride.user?.socketId
+        );
+        console.log('======================================');
 
         if (ride.user?.socketId) {
 
             sendMessageToSocketId(
-
                 ride.user.socketId,
-
                 {
-                    event:
-                        'ride-started',
-
-                    data:
-                        ride
+                    event: 'ride-started',
+                    data: ride
                 }
+            );
 
+            console.log(
+                '✅ RIDE-STARTED SENT TO USER'
             );
 
         } else {
 
             console.log(
-                '❌ USER SOCKET ID MISSING WHEN STARTING RIDE'
+                '❌ USER SOCKET ID MISSING'
             );
-
         }
 
-
-        return res.status(200).json({
-            ride
-        });
-
+        return res.status(200).json(ride);
 
     } catch (err) {
 
@@ -546,16 +539,11 @@ async function startRide() {
             err
         );
 
-
         return res.status(500).json({
             message: err.message
         });
-
     }
-
 };
-
-
 // ======================================================
 // END RIDE
 // ======================================================
