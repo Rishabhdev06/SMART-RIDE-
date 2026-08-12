@@ -101,42 +101,122 @@ module.exports.getEstimatedValue = async (req, res) => {
         return res.status(500).json({ message: err.message });
     }
 };
-
 module.exports.confirmRide = async (req, res) => {
+
     const errors = validationResult(req);
+
     if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+
+        return res.status(400).json({
+            errors: errors.array()
+        });
+
     }
+
 
     const { rideId } = req.body;
 
+
     try {
-        const ride = await rideService.confirmRide({ rideId, captain: req.captain });
 
-        console.log('======================================');
-        console.log('🚕 CAPTAIN CONFIRMED RIDE');
-        console.log('Ride ID:', ride._id);
-        console.log('Captain ID:', req.captain._id);
-        console.log('User ID:', ride.user?._id);
-        console.log('User Socket ID:', ride.user?.socketId);
-        console.log('OTP:', ride.otp);
-        console.log('======================================');
-
-        if (ride.user?.socketId) {
-            sendMessageToSocketId(ride.user.socketId, {
-                event: 'ride-confirmed',
-                data: ride
+        const ride =
+            await rideService.confirmRide({
+                rideId,
+                captain: req.captain
             });
-            console.log('✅ ride-confirmed SENT TO USER');
+
+
+        console.log('');
+        console.log(
+            '======================================'
+        );
+
+        console.log(
+            '🚕 CAPTAIN CONFIRMED RIDE'
+        );
+
+        console.log(
+            'Ride ID:',
+            ride._id
+        );
+
+        console.log(
+            'User ID:',
+            ride.user?._id
+        );
+
+        console.log(
+            'USER SOCKET ID:',
+            ride.user?.socketId
+        );
+
+        console.log(
+            'Captain ID:',
+            ride.captain?._id
+        );
+
+        console.log(
+            'OTP:',
+            ride.otp
+        );
+
+        console.log(
+            '======================================'
+        );
+
+
+        if (!ride.user?.socketId) {
+
+            console.log(
+                '❌ USER SOCKET ID IS MISSING'
+            );
+
         } else {
-            console.log('❌ USER SOCKET ID IS MISSING - USER NOT NOTIFIED');
+
+            const sent =
+                sendMessageToSocketId(
+                    ride.user.socketId,
+                    {
+                        event: 'ride-confirmed',
+                        data: ride
+                    }
+                );
+
+
+            if (sent) {
+
+                console.log(
+                    '✅ RIDE-CONFIRMED SENT TO USER'
+                );
+
+            } else {
+
+                console.log(
+                    '❌ RIDE-CONFIRMED COULD NOT BE SENT'
+                );
+
+            }
+
         }
 
+
         return res.status(200).json(ride);
+
+
     } catch (err) {
-        console.error('❌ CONFIRM RIDE ERROR:', err);
-        return res.status(500).json({ message: err.message });
+
+        console.error(
+            '❌ CONFIRM RIDE ERROR:',
+            err
+        );
+
+
+        return res.status(500).json({
+            message: err.message
+        });
+
     }
+
 };
 
 module.exports.startRide = async (req, res) => {
