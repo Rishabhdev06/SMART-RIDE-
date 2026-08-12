@@ -33,9 +33,6 @@ module.exports.authUser = async (req, res, next) => {
     }
 }
 
-const jwt = require('jsonwebtoken');
-const captainModel = require('../models/captain.model');
-const blackListTokenModel = require('../models/blackListToken.model');
 
 module.exports.authCaptain = async (req, res, next) => {
 
