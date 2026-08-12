@@ -1,8 +1,10 @@
 import React from 'react'
 
 const WaitingForDriver = (props) => {
-console.log('🚕 WaitingForDriver RIDE:', props.ride)
-console.log('🔐 WaitingForDriver OTP:', props.ride?.otp)
+
+    console.log('🚕 WaitingForDriver RIDE:', props.ride)
+    console.log('🔐 WaitingForDriver OTP:', props.ride?.otp)
+
     return (
         <div>
 
@@ -74,7 +76,6 @@ console.log('🔐 WaitingForDriver OTP:', props.ride?.otp)
                         <i className="ri-map-pin-user-fill"></i>
 
                         <div>
-
                             <h3 className='text-lg font-medium'>
                                 Pickup
                             </h3>
@@ -82,7 +83,6 @@ console.log('🔐 WaitingForDriver OTP:', props.ride?.otp)
                             <p className='text-sm -mt-1 text-gray-600'>
                                 {props.ride?.pickup}
                             </p>
-
                         </div>
 
                     </div>
@@ -94,7 +94,6 @@ console.log('🔐 WaitingForDriver OTP:', props.ride?.otp)
                         <i className="text-lg ri-map-pin-2-fill"></i>
 
                         <div>
-
                             <h3 className='text-lg font-medium'>
                                 Drop
                             </h3>
@@ -102,7 +101,6 @@ console.log('🔐 WaitingForDriver OTP:', props.ride?.otp)
                             <p className='text-sm -mt-1 text-gray-600'>
                                 {props.ride?.destination}
                             </p>
-
                         </div>
 
                     </div>
@@ -114,7 +112,6 @@ console.log('🔐 WaitingForDriver OTP:', props.ride?.otp)
                         <i className="ri-vip-crown-line"></i>
 
                         <div>
-
                             <h3 className='text-lg font-medium'>
                                 Covered by your plan
                             </h3>
@@ -122,7 +119,6 @@ console.log('🔐 WaitingForDriver OTP:', props.ride?.otp)
                             <p className='text-sm -mt-1 text-gray-600'>
                                 No fare due
                             </p>
-
                         </div>
 
                     </div>
