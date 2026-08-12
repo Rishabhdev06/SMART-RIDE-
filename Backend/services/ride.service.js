@@ -88,31 +88,123 @@ module.exports.createRide = async ({
     }
 }
 
-module.exports.confirmRide = async ({
-    rideId, captain
-}) => {
-    if (!rideId) {
-        throw new Error('Ride id is required');
+module.exports.confirmRide = async (req, res) => {
+
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+
+        return res.status(400).json({
+            errors: errors.array()
+        });
+
     }
 
-    await rideModel.findOneAndUpdate({
-        _id: rideId
-    }, {
-        status: 'accepted',
-        captain: captain._id
-    })
 
-    const ride = await rideModel.findOne({
-        _id: rideId
-    }).populate('user').populate('captain').populate('subscription').select('+otp');
+    const { rideId } = req.body;
 
-    if (!ride) {
-        throw new Error('Ride not found');
+
+    try {
+
+        const ride =
+            await rideService.confirmRide({
+                rideId,
+                captain: req.captain
+            });
+
+
+        console.log('');
+        console.log(
+            '======================================'
+        );
+
+        console.log(
+            '🚕 CAPTAIN CONFIRMED RIDE'
+        );
+
+        console.log(
+            'Ride ID:',
+            ride._id
+        );
+
+        console.log(
+            'User ID:',
+            ride.user?._id
+        );
+
+        console.log(
+            'USER SOCKET ID:',
+            ride.user?.socketId
+        );
+
+        console.log(
+            'Captain ID:',
+            ride.captain?._id
+        );
+
+        console.log(
+            'OTP:',
+            ride.otp
+        );
+
+        console.log(
+            '======================================'
+        );
+
+
+        if (!ride.user?.socketId) {
+
+            console.log(
+                '❌ USER SOCKET ID IS MISSING'
+            );
+
+        } else {
+
+            const sent =
+                sendMessageToSocketId(
+                    ride.user.socketId,
+                    {
+                        event: 'ride-confirmed',
+                        data: ride
+                    }
+                );
+
+
+            if (sent) {
+
+                console.log(
+                    '✅ RIDE-CONFIRMED SENT TO USER'
+                );
+
+            } else {
+
+                console.log(
+                    '❌ RIDE-CONFIRMED COULD NOT BE SENT'
+                );
+
+            }
+
+        }
+
+
+        return res.status(200).json(ride);
+
+
+    } catch (err) {
+
+        console.error(
+            '❌ CONFIRM RIDE ERROR:',
+            err
+        );
+
+
+        return res.status(500).json({
+            message: err.message
+        });
+
     }
 
-    return ride;
-
-}
+};
 
 module.exports.startRide = async ({ rideId, otp, captain }) => {
     if (!rideId || !otp) {
