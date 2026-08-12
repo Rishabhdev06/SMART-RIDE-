@@ -3,15 +3,30 @@ const mapService = require('./maps.service');
 const subscriptionService = require('./subscription.service');
 const crypto = require('crypto');
 
-// Rough, informational-only value estimate for a pickup & drop, shown to the
-// user for reference. It is never charged - the ride is covered by the
-// user's active monthly subscription.
-async function getEstimatedValue(pickup, destination, vehicleType) {
+
+// ======================================================
+// GET ESTIMATED VALUE
+// ======================================================
+
+async function getEstimatedValue(
+    pickup,
+    destination,
+    vehicleType
+) {
+
     if (!pickup || !destination) {
-        throw new Error('Pickup and destination are required');
+        throw new Error(
+            'Pickup and destination are required'
+        );
     }
 
-    const distanceTime = await mapService.getDistanceTime(pickup, destination);
+
+    const distanceTime =
+        await mapService.getDistanceTime(
+            pickup,
+            destination
+        );
+
 
     const baseValue = {
         auto: 30,
@@ -19,11 +34,13 @@ async function getEstimatedValue(pickup, destination, vehicleType) {
         moto: 20
     };
 
+
     const perKmRate = {
         auto: 10,
         car: 15,
         moto: 8
     };
+
 
     const perMinuteRate = {
         auto: 2,
@@ -31,75 +48,115 @@ async function getEstimatedValue(pickup, destination, vehicleType) {
         moto: 1.5
     };
 
+
     const value = Math.round(
-        baseValue[ vehicleType ]
-        + ((distanceTime.distance.value / 1000) * perKmRate[ vehicleType ])
-        + ((distanceTime.duration.value / 60) * perMinuteRate[ vehicleType ])
+
+        baseValue[vehicleType]
+
+        +
+
+        (
+            (distanceTime.distance.value / 1000)
+            *
+            perKmRate[vehicleType]
+        )
+
+        +
+
+        (
+            (distanceTime.duration.value / 60)
+            *
+            perMinuteRate[vehicleType]
+        )
+
     );
+
 
     return value;
 }
 
-module.exports.getEstimatedValue = getEstimatedValue;
+
+module.exports.getEstimatedValue =
+    getEstimatedValue;
+
+
+// ======================================================
+// GENERATE OTP
+// ======================================================
 
 function getOtp(num) {
-    function generateOtp(num) {
-        const otp = crypto.randomInt(Math.pow(10, num - 1), Math.pow(10, num)).toString();
-        return otp;
-    }
-    return generateOtp(num);
+
+    const otp =
+        crypto.randomInt(
+            Math.pow(10, num - 1),
+            Math.pow(10, num)
+        ).toString();
+
+    return otp;
 }
 
+
+// ======================================================
+// CREATE RIDE
+// ======================================================
 
 module.exports.createRide = async ({
-    user, pickup, destination
+    user,
+    pickup,
+    destination
 }) => {
+
     if (!user || !pickup || !destination) {
-        throw new Error('Pickup and destination are required');
+
+        throw new Error(
+            'Pickup and destination are required'
+        );
+
     }
 
-    // Requires - and consumes one ride from - the user's active monthly subscription.
-    const subscription = await subscriptionService.consumeRide(user);
-    const vehicleType = subscription.plan.vehicleType;
+
+    // Consume one ride from active subscription
+
+    const subscription =
+        await subscriptionService.consumeRide(
+            user
+        );
+
+
+    const vehicleType =
+        subscription.plan.vehicleType;
+
 
     let estimatedValue;
+
+
     try {
-        estimatedValue = await getEstimatedValue(pickup, destination, vehicleType);
+
+        estimatedValue =
+            await getEstimatedValue(
+                pickup,
+                destination,
+                vehicleType
+            );
+
     } catch (err) {
+
+        console.error(
+            '⚠️ ESTIMATED VALUE ERROR:',
+            err.message
+        );
+
         estimatedValue = undefined;
+
     }
-
-    try {
-        const ride = await rideModel.create({
-            user,
-            subscription: subscription._id,
-            pickup,
-            destination,
-            vehicleType,
-            estimatedValue,
-            otp: getOtp(6)
-        })
-
-        return ride;
-    } catch (err) {
-        // Roll back the quota deduction if ride creation failed for any reason.
-        await subscriptionService.refundRide(subscription._id);
-        throw err;
-    }
-}
-
-module.exports.confirmRide = async (req, res) => {
-
-    const { rideId } = req.body;
 
 
     try {
 
-        const ride =
-            await rideService.confirmRide({
-                rideId,
-                captain: req.captain
-            });
+        // IMPORTANT:
+        // OTP is generated HERE when the ride is created.
+
+        const otp = getOtp(6);
 
 
         console.log('');
@@ -108,32 +165,12 @@ module.exports.confirmRide = async (req, res) => {
         );
 
         console.log(
-            '🚕 CAPTAIN CONFIRMED RIDE'
+            '🚕 CREATING RIDE'
         );
 
         console.log(
-            'Ride ID:',
-            ride._id
-        );
-
-        console.log(
-            'User ID:',
-            ride.user?._id
-        );
-
-        console.log(
-            'USER SOCKET ID:',
-            ride.user?.socketId
-        );
-
-        console.log(
-            'Captain ID:',
-            ride.captain?._id
-        );
-
-        console.log(
-            'OTP:',
-            ride.otp
+            'OTP GENERATED:',
+            otp
         );
 
         console.log(
@@ -141,137 +178,435 @@ module.exports.confirmRide = async (req, res) => {
         );
 
 
-        if (!ride.user?.socketId) {
+        const ride =
+            await rideModel.create({
 
-            console.log(
-                '❌ USER SOCKET ID IS MISSING'
-            );
+                user,
 
-        } else {
+                subscription:
+                    subscription._id,
 
-            const sent =
-                sendMessageToSocketId(
-                    ride.user.socketId,
-                    {
-                        event: 'ride-confirmed',
-                        data: ride
-                    }
-                );
+                pickup,
 
+                destination,
 
-            if (sent) {
+                vehicleType,
 
-                console.log(
-                    '✅ RIDE-CONFIRMED SENT TO USER'
-                );
+                estimatedValue,
 
-            } else {
+                otp
 
-                console.log(
-                    '❌ RIDE-CONFIRMED COULD NOT BE SENT'
-                );
-
-            }
-
-        }
+            });
 
 
-        return res.status(200).json(ride);
+        return ride;
 
 
     } catch (err) {
 
-        console.error(
-            '❌ CONFIRM RIDE ERROR:',
-            err
+        // Refund ride quota if creation fails
+
+        await subscriptionService.refundRide(
+            subscription._id
         );
 
-
-        return res.status(500).json({
-            message: err.message
-        });
+        throw err;
 
     }
 
 };
 
-module.exports.startRide = async ({ rideId, otp, captain }) => {
-    if (!rideId || !otp) {
-        throw new Error('Ride id and OTP are required');
+
+// ======================================================
+// CONFIRM RIDE
+// ======================================================
+
+module.exports.confirmRide = async ({
+    rideId,
+    captain
+}) => {
+
+    if (!rideId) {
+
+        throw new Error(
+            'Ride ID is required'
+        );
+
     }
 
-    const ride = await rideModel.findOne({
-        _id: rideId
-    }).populate('user').populate('captain').populate('subscription').select('+otp');
+
+    if (!captain) {
+
+        throw new Error(
+            'Captain is required'
+        );
+
+    }
+
+
+    console.log('');
+    console.log(
+        '======================================'
+    );
+
+    console.log(
+        '🚕 CONFIRMING RIDE'
+    );
+
+    console.log(
+        'Ride ID:',
+        rideId
+    );
+
+    console.log(
+        'Captain ID:',
+        captain._id
+    );
+
+    console.log(
+        '======================================'
+    );
+
+
+    // Accept only a pending ride
+
+    const updatedRide =
+        await rideModel.findOneAndUpdate(
+
+            {
+                _id: rideId,
+
+                status: 'pending'
+            },
+
+            {
+                status: 'accepted',
+
+                captain: captain._id
+            },
+
+            {
+                new: true
+            }
+
+        );
+
+
+    if (!updatedRide) {
+
+        throw new Error(
+            'Ride not found or ride has already been accepted'
+        );
+
+    }
+
+
+    // IMPORTANT:
+    // otp has select:false in ride.model.js.
+    // Therefore +otp is REQUIRED.
+
+    const ride =
+        await rideModel
+            .findById(rideId)
+            .populate('user')
+            .populate('captain')
+            .populate('subscription')
+            .select('+otp');
+
 
     if (!ride) {
-        throw new Error('Ride not found');
+
+        throw new Error(
+            'Ride not found after confirmation'
+        );
+
     }
+
+
+    console.log('');
+    console.log(
+        '======================================'
+    );
+
+    console.log(
+        '✅ RIDE CONFIRMED'
+    );
+
+    console.log(
+        'Ride ID:',
+        ride._id
+    );
+
+    console.log(
+        'User ID:',
+        ride.user?._id
+    );
+
+    console.log(
+        'User Socket ID:',
+        ride.user?.socketId
+    );
+
+    console.log(
+        'Captain ID:',
+        ride.captain?._id
+    );
+
+    console.log(
+        'OTP:',
+        ride.otp
+    );
+
+    console.log(
+        '======================================'
+    );
+
+
+    return ride;
+
+};
+
+
+// ======================================================
+// START RIDE
+// ======================================================
+
+module.exports.startRide = async ({
+    rideId,
+    otp,
+    captain
+}) => {
+
+    if (!rideId || !otp) {
+
+        throw new Error(
+            'Ride id and OTP are required'
+        );
+
+    }
+
+
+    if (!captain) {
+
+        throw new Error(
+            'Captain is required'
+        );
+
+    }
+
+
+    const ride =
+        await rideModel
+            .findOne({
+                _id: rideId,
+
+                captain: captain._id
+            })
+            .populate('user')
+            .populate('captain')
+            .populate('subscription')
+            .select('+otp');
+
+
+    if (!ride) {
+
+        throw new Error(
+            'Ride not found'
+        );
+
+    }
+
 
     if (ride.status !== 'accepted') {
-        throw new Error('Ride not accepted');
+
+        throw new Error(
+            'Ride not accepted'
+        );
+
     }
+
 
     if (ride.otp !== otp) {
-        throw new Error('Invalid OTP');
+
+        throw new Error(
+            'Invalid OTP'
+        );
+
     }
 
-    await rideModel.findOneAndUpdate({
-        _id: rideId
-    }, {
-        status: 'ongoing'
-    })
+
+    await rideModel.findOneAndUpdate(
+
+        {
+            _id: rideId
+        },
+
+        {
+            status: 'ongoing'
+        }
+
+    );
+
+
+    ride.status = 'ongoing';
+
 
     return ride;
-}
 
-module.exports.endRide = async ({ rideId, captain }) => {
+};
+
+
+// ======================================================
+// END RIDE
+// ======================================================
+
+module.exports.endRide = async ({
+    rideId,
+    captain
+}) => {
+
     if (!rideId) {
-        throw new Error('Ride id is required');
+
+        throw new Error(
+            'Ride id is required'
+        );
+
     }
 
-    const ride = await rideModel.findOne({
-        _id: rideId,
-        captain: captain._id
-    }).populate('user').populate('captain').populate('subscription').select('+otp');
+
+    if (!captain) {
+
+        throw new Error(
+            'Captain is required'
+        );
+
+    }
+
+
+    const ride =
+        await rideModel
+            .findOne({
+                _id: rideId,
+
+                captain: captain._id
+            })
+            .populate('user')
+            .populate('captain')
+            .populate('subscription')
+            .select('+otp');
+
 
     if (!ride) {
-        throw new Error('Ride not found');
+
+        throw new Error(
+            'Ride not found'
+        );
+
     }
+
 
     if (ride.status !== 'ongoing') {
-        throw new Error('Ride not ongoing');
+
+        throw new Error(
+            'Ride not ongoing'
+        );
+
     }
 
-    await rideModel.findOneAndUpdate({
-        _id: rideId
-    }, {
-        status: 'completed'
-    })
+
+    await rideModel.findOneAndUpdate(
+
+        {
+            _id: rideId
+        },
+
+        {
+            status: 'completed'
+        }
+
+    );
+
+
+    ride.status = 'completed';
+
 
     return ride;
-}
 
-module.exports.cancelRide = async ({ rideId, user }) => {
+};
+
+
+// ======================================================
+// CANCEL RIDE
+// ======================================================
+
+module.exports.cancelRide = async ({
+    rideId,
+    user
+}) => {
+
     if (!rideId) {
-        throw new Error('Ride id is required');
+
+        throw new Error(
+            'Ride id is required'
+        );
+
     }
 
-    const ride = await rideModel.findOne({ _id: rideId, user: user._id });
+
+    if (!user) {
+
+        throw new Error(
+            'User is required'
+        );
+
+    }
+
+
+    const ride =
+        await rideModel.findOne({
+
+            _id: rideId,
+
+            user: user._id
+
+        });
+
 
     if (!ride) {
-        throw new Error('Ride not found');
+
+        throw new Error(
+            'Ride not found'
+        );
+
     }
 
-    if (![ 'pending', 'accepted' ].includes(ride.status)) {
-        throw new Error('Ride can no longer be cancelled');
+
+    if (
+        ![
+            'pending',
+            'accepted'
+        ].includes(ride.status)
+    ) {
+
+        throw new Error(
+            'Ride can no longer be cancelled'
+        );
+
     }
+
 
     ride.status = 'cancelled';
+
     await ride.save();
 
-    // Give the ride back to the user's monthly quota since it never happened.
-    await subscriptionService.refundRide(ride.subscription);
+
+    // Return the ride to monthly quota
+
+    await subscriptionService.refundRide(
+        ride.subscription
+    );
+
 
     return ride;
-}
+
+};
