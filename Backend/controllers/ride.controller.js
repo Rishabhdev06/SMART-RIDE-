@@ -222,32 +222,32 @@ module.exports.confirmRide = async (req, res) => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
-
         return res.status(400).json({
             errors: errors.array()
         });
-
     }
 
     const { rideId } = req.body;
 
     try {
 
-        const ride =
-            await rideService.confirmRide({
-                rideId,
-                captain: req.captain
-            });
+        const ride = await rideService.confirmRide({
+            rideId,
+            captain: req.captain
+        });
 
-
-        console.log(
-            '✅ RIDE CONFIRMED BY CAPTAIN:',
-            req.captain._id
-        );
+        console.log('======================================');
+        console.log('🚕 CAPTAIN CONFIRMED RIDE');
+        console.log('Ride ID:', ride._id);
+        console.log('Captain ID:', req.captain._id);
+        console.log('User ID:', ride.user?._id);
+        console.log('User Socket ID:', ride.user?.socketId);
+        console.log('OTP:', ride.otp);
+        console.log('======================================');
 
 
         // Notify user
-        if (ride.user && ride.user.socketId) {
+        if (ride.user?.socketId) {
 
             sendMessageToSocketId(
                 ride.user.socketId,
@@ -257,6 +257,16 @@ module.exports.confirmRide = async (req, res) => {
                 }
             );
 
+            console.log(
+                '✅ ride-confirmed SENT TO USER'
+            );
+
+        } else {
+
+            console.log(
+                '❌ USER SOCKET ID IS MISSING - USER NOT NOTIFIED'
+            );
+
         }
 
 
@@ -264,7 +274,10 @@ module.exports.confirmRide = async (req, res) => {
 
     } catch (err) {
 
-        console.error('❌ CONFIRM RIDE ERROR:', err);
+        console.error(
+            '❌ CONFIRM RIDE ERROR:',
+            err
+        );
 
         return res.status(500).json({
             message: err.message
@@ -272,7 +285,6 @@ module.exports.confirmRide = async (req, res) => {
 
     }
 };
-
 
 // ======================================================
 // START RIDE
