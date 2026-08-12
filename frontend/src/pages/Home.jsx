@@ -305,42 +305,61 @@ const Home = () => {
     // =====================================================
     // RECEIVE RIDE EVENTS
     // =====================================================
+useEffect(() => {
 
-   useEffect(() => {
+    if (!socket) return;
 
-    const handleRideConfirmed = (ride) => {
+    const handleRideConfirmed = (confirmedRide) => {
 
-        console.log('');
         console.log('======================================');
-        console.log('🚕 RIDE-CONFIRMED RECEIVED BY USER');
-        console.log('Ride:', ride);
-        console.log('OTP:', ride?.otp);
-        console.log('Captain:', ride?.captain);
+        console.log('🚕 RIDE CONFIRMED EVENT RECEIVED');
+        console.log('Confirmed ride:', confirmedRide);
+        console.log('OTP:', confirmedRide?.otp);
+        console.log('Captain:', confirmedRide?.captain);
         console.log('======================================');
 
-        setRide(ride);
+        if (!confirmedRide) {
+            console.log('❌ CONFIRMED RIDE IS NULL');
+            return;
+        }
+
+        // IMPORTANT
+        setRide(confirmedRide);
+
+        // Hide "Looking for Captain"
         setVehicleFound(false);
+
+        // Show WaitingForDriver
         setWaitingForDriver(true);
 
     };
 
+    const handleRideStarted = (startedRide) => {
 
-    socket.on(
-        'ride-confirmed',
-        handleRideConfirmed
-    );
+        console.log('🚕 RIDE STARTED');
+        console.log('Started ride:', startedRide);
 
+        setWaitingForDriver(false);
 
-    return () => {
-
-        socket.off(
-            'ride-confirmed',
-            handleRideConfirmed
-        );
+        navigate('/riding', {
+            state: {
+                ride: startedRide
+            }
+        });
 
     };
 
-}, [socket]);
+    socket.on('ride-confirmed', handleRideConfirmed);
+    socket.on('ride-started', handleRideStarted);
+
+    return () => {
+
+        socket.off('ride-confirmed', handleRideConfirmed);
+        socket.off('ride-started', handleRideStarted);
+
+    };
+
+}, [socket, navigate]);
 
 
         // -----------------------------------------------
