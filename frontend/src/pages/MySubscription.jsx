@@ -13,7 +13,7 @@ const MySubscription = () => {
 
     useEffect(() => {
         axios.get(`${import.meta.env.VITE_BASE_URL}/subscriptions/me`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            headers: { Authorization: `Bearer ${localStorage.getItem('userToken')}` }
         })
             .then(res => setSubscription(res.data))
             .catch(() => setError('Could not load your subscription.'))
@@ -25,7 +25,7 @@ const MySubscription = () => {
         setError('')
         try {
             await axios.post(`${import.meta.env.VITE_BASE_URL}/subscriptions/cancel`, {}, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                headers: { Authorization: `Bearer ${localStorage.getItem('userToken')}` }
             })
             setSubscription(null)
         } catch (err) {
