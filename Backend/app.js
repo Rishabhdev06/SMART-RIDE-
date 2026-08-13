@@ -6,7 +6,7 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 app.use(cors({
-  origin: 'https://smart-ride-three.vercel.app',
+  origin: 'https://rishabhdev06-smart-ride.vercel.app',
   credentials: true
 }));
 const cookieParser = require('cookie-parser');
