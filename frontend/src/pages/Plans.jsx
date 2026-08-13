@@ -31,7 +31,7 @@ const Plans = () => {
         setSubscribingId(planId)
         try {
             const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/subscriptions/subscribe`, { planId }, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                headers: { Authorization: `Bearer ${localStorage.getItem('userToken')}` }
             })
             setSubscription(res.data)
             navigate('/subscription')
