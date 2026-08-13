@@ -338,52 +338,32 @@ module.exports.confirmRide = async (req, res) => {
         // ==================================================
         // CONFIRM RIDE THROUGH SERVICE
         // ==================================================
-
-       module.exports.confirmRide = async ({
+const ride = await rideService.confirmRide({
     rideId,
-    captain
-}) => {
+    captain: req.captain
+});try {
+    const ride = await rideService.confirmRide({
+        rideId,
+        captain: req.captain
+    });
 
-    if (!rideId || !captain) {
-        throw new Error('Ride ID and captain are required');
+    if (!ride.user?.socketId) {
+        console.log('❌ USER SOCKET ID IS MISSING');
+    } else {
+        sendMessageToSocketId(ride.user.socketId, {
+            event: 'ride-confirmed',
+            data: ride
+        });
     }
 
-    const ride = await rideModel
-        .findOneAndUpdate(
-            {
-                _id: rideId,
-                status: 'pending'
-            },
-            {
-                status: 'accepted',
-                captain: captain._id
-            },
-            {
-                new: true
-            }
-        )
-        .populate('user')
-        .populate('captain')
-        .populate('subscription');
+    return res.status(200).json(ride);
+} catch (err) {
+    console.error('❌ CONFIRM RIDE ERROR:', err);
 
-    if (!ride) {
-        throw new Error(
-            'Ride not found or already accepted'
-        );
-    }
-
-    console.log('======================================');
-    console.log('🚕 RIDE ACCEPTED');
-    console.log('Ride ID:', ride._id);
-    console.log('Captain:', ride.captain?._id);
-    console.log('User:', ride.user?._id);
-    console.log('User socket:', ride.user?.socketId);
-    console.log('OTP:', ride.otp);
-    console.log('======================================');
-
-    return ride;
-};
-
+    return res.status(500).json({
+        message: err.message
+    });
+}
         // ==================================================
         // SEND RIDE CONFIRMED TO USER
         // ==================================================
