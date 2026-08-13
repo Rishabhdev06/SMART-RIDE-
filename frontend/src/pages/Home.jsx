@@ -51,7 +51,7 @@ const Home = () => {
     useEffect(() => {
         const loadSubscription = async () => {
             try {
-                const token = localStorage.getItem('token')
+                const token = localStorage.getItem('userToken')
                 if (!token) {
                     setSubscription(null)
                     return
@@ -144,7 +144,7 @@ const Home = () => {
         try {
             const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/maps/get-suggestions`, {
                 params: { input: value },
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                headers: { Authorization: `Bearer ${localStorage.getItem('userToken')}` }
             })
             setPickupSuggestions(response.data)
         } catch (error) {
@@ -164,7 +164,7 @@ const Home = () => {
         try {
             const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/maps/get-suggestions`, {
                 params: { input: value },
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                headers: { Authorization: `Bearer ${localStorage.getItem('userToken')}` }
             })
             setDestinationSuggestions(response.data)
         } catch (error) {
@@ -239,7 +239,7 @@ const Home = () => {
                 pickup,
                 destination
             }, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                headers: { Authorization: `Bearer ${localStorage.getItem('userToken')}` }
             })
 
             console.log('✅ Ride created:', response.data)
