@@ -262,7 +262,7 @@ const CaptainHome = () => {
     try {
 
         const token =
-            localStorage.getItem('userToken');
+            localStorage.getItem('captainToken');
 
 
         console.log(
