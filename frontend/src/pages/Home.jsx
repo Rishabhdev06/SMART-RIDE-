@@ -243,7 +243,7 @@ const Home = () => {
             })
 
             console.log('✅ Ride created:', response.data)
-
+             setRide(response.data)
             setSubscription(prev => {
                 if (!prev) return prev
                 return {
