@@ -268,7 +268,7 @@ const Home = () => {
                 Smart Ride
             </div>
 
-            <div className='h-screen w-screen'>
+            <div className='relative z-0 h-screen w-screen'>
                 <LiveTracking />
             </div>
 
