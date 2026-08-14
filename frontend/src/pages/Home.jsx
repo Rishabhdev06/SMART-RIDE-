@@ -272,7 +272,7 @@ const Home = () => {
                 <LiveTracking />
             </div>
 
-            <div className='flex flex-col justify-end h-screen absolute top-0 w-full'>
+            <div className='absolute top-0 z-10 flex h-screen w-full flex-col justify-end'>
                 <div className='h-[30%] p-6 bg-white relative'>
                     <h5 ref={panelCloseRef} onClick={() => setPanelOpen(false)} className='absolute opacity-0 right-6 top-6 text-2xl'>
                         <i className="ri-arrow-down-wide-line"></i>
