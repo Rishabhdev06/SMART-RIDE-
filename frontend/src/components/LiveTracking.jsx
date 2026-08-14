@@ -93,7 +93,7 @@ const LiveTracking = () => {
         >
 
             <TileLayer
-                url={`https://maps.geoapify.com/v1/tile/osm-bright-smooth-slategray/{z}/{x}/{y}.png?apiKey=${import.meta.env.VITE_GEOAPIFY_API_KEY}`}
+                url={`https://maps.geoapify.com/v1/tile/osm-bright-smooth/{z}/{x}/{y}.png?apiKey=${import.meta.env.VITE_GEOAPIFY_API_KEY}`}
                 attribution='© Geoapify |© OpenStreetMap contributors'
                  maxZoom={20}
             />
