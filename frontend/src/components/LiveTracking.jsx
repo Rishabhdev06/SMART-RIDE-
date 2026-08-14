@@ -83,6 +83,7 @@ const LiveTracking = () => {
     return (
 
         <MapContainer
+            className="relative z-0"
             center={currentPosition}
             zoom={15}
             style={{
@@ -92,7 +93,7 @@ const LiveTracking = () => {
         >
 
             <TileLayer
-                url={'https://maps.geoapify.com/v1/tile/osm-bright-smooth-slategray/{z}/{x}/{y}.png?apiKey=${import.meta.env.VITE_GEOAPIFY_API_KEY}'}
+                url={`https://maps.geoapify.com/v1/tile/osm-bright-smooth-slategray/{z}/{x}/{y}.png?apiKey=${import.meta.env.VITE_GEOAPIFY_API_KEY}`}
                 attribution='© OpenStreetMap contributors'
             />
 
