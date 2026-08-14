@@ -1,114 +1,61 @@
 import React, { useState, useEffect } from 'react'
-import {
-    MapContainer,
-    TileLayer,
-    Marker,
-    Popup
-} from 'react-leaflet'
+import { LoadScript, GoogleMap, Marker } from '@react-google-maps/api'
 
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+const containerStyle = {
+    width: '100%',
+    height: '100%',
+};
 
-import markerIcon from 'leaflet/dist/images/marker-icon.png'
-import markerShadow from 'leaflet/dist/images/marker-shadow.png'
+const center = {
+    lat: 28.6139,
+    lng: 77.2090
+};
 
 const LiveTracking = () => {
-
-    const [currentPosition, setCurrentPosition] = useState({
-        lat: 28.6139,
-        lng: 77.2090
-    })
+    const [ currentPosition, setCurrentPosition ] = useState(center);
 
     useEffect(() => {
-
         if (!navigator.geolocation) {
             console.log('Geolocation is not supported')
             return
         }
 
         const updatePosition = (position) => {
-
-            const { latitude, longitude } =
-                position.coords
-
-            console.log(
-                'Position updated:',
-                latitude,
-                longitude
-            )
-
+            const { latitude, longitude } = position.coords
+            console.log('Position updated:', latitude, longitude)
             setCurrentPosition({
                 lat: latitude,
                 lng: longitude
             })
         }
 
-        navigator.geolocation.getCurrentPosition(
-            updatePosition,
-            (error) => {
-                console.log(
-                    'Location error:',
-                    error.message
-                )
-            }
-        )
-
-        const watchId =
-            navigator.geolocation.watchPosition(
-                updatePosition,
-                (error) => {
-                    console.log(
-                        'Location error:',
-                        error.message
-                    )
-                }
-            )
-
-        return () => {
-            navigator.geolocation.clearWatch(
-                watchId
-            )
-        }
-
-    }, [])
-
-    const defaultIcon =
-        new L.Icon({
-            iconUrl: markerIcon,
-            shadowUrl: markerShadow,
-            iconSize: [25, 41],
-            iconAnchor: [12, 41]
+        navigator.geolocation.getCurrentPosition(updatePosition, (error) => {
+            console.log('Location error:', error.message)
         })
 
+        const watchId = navigator.geolocation.watchPosition(updatePosition, (error) => {
+            console.log('Location error:', error.message)
+        })
+
+        return () => {
+            navigator.geolocation.clearWatch(watchId)
+        }
+    }, [])
+
     return (
-
-        <MapContainer
-            className="relative z-0"
-            center={currentPosition}
-            zoom={15}
-            style={{
-                width: '100%',
-                height: '100%'
-            }}
-        >
-
-            <TileLayer
-                url={`https://maps.geoapify.com/v1/tile/osm-bright-smooth/{z}/{x}/{y}.png?apiKey=${import.meta.env.VITE_GEOAPIFY_API_KEY}`}
-                attribution='© Geoapify |© OpenStreetMap contributors'
-                 maxZoom={20}
-            />
-
-            <Marker
-                position={currentPosition}
-                icon={defaultIcon}
+        <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+            <GoogleMap
+                mapContainerStyle={containerStyle}
+                center={currentPosition}
+                zoom={15}
+                options={{
+                    streetViewControl: true,
+                    fullscreenControl: false,
+                }}
             >
-                <Popup>
-                    You are here
-                </Popup>
-            </Marker>
-
-        </MapContainer>
-
+                <Marker position={currentPosition} />
+            </GoogleMap>
+        </LoadScript>
     )
 }
 
