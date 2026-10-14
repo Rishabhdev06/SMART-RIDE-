@@ -92,20 +92,55 @@ const Home = () => {
     }, [ socket, user ])
 
     // Receive ride events
-    useEffect(() => {
-        if (!socket) return
-        const handleRideConfirmed = (confirmedRide) => {
-            console.log('🚕 RIDE CONFIRMED EVENT RECEIVED:', confirmedRide)
+   
+useEffect(() => {
+    if (!socket) return;
 
-            if (!confirmedRide) {
-                console.log('❌ CONFIRMED RIDE IS NULL')
-                return
-            }
+    const handleRideConfirmed = (confirmedRide) => {
+        console.log(
+            '🚕 RIDE CONFIRMED EVENT RECEIVED:',
+            confirmedRide
+        );
 
-            setRide(confirmedRide)
-            setVehicleFound(false)
-            setWaitingForDriver(true)
+        if (!confirmedRide) {
+            console.error('❌ CONFIRMED RIDE IS NULL');
+            return;
         }
+
+        console.log('✅ Updating ride state and opening OTP panel');
+
+        setRide(confirmedRide);
+        setVehicleFound(false);
+        setWaitingForDriver(true);
+    };
+
+    const handleRideStarted = (startedRide) => {
+        console.log('🚕 RIDE STARTED:', startedRide);
+
+        setWaitingForDriver(false);
+        navigate('/riding', {
+            state: { ride: startedRide }
+        });
+    };
+
+    const handleRideEnded = (rideData) => {
+        console.log('🏁 RIDE ENDED:', rideData);
+
+        setWaitingForDriver(false);
+        setVehicleFound(false);
+        setRide(null);
+    };
+
+    socket.on('ride-confirmed', handleRideConfirmed);
+    socket.on('ride-started', handleRideStarted);
+    socket.on('ride-ended', handleRideEnded);
+
+    return () => {
+        socket.off('ride-confirmed', handleRideConfirmed);
+        socket.off('ride-started', handleRideStarted);
+        socket.off('ride-ended', handleRideEnded);
+    };
+}, [socket, navigate]);
 
         const handleRideStarted = (startedRide) => {
             console.log('🚕 RIDE STARTED:', startedRide)
@@ -240,38 +275,69 @@ const Home = () => {
         setPanelOpen(false)
     }
 
-    async function createRide() {
-        setBookingError('')
+   
+async function createRide() {
+    setBookingError('');
 
-        try {
-            console.log('🚕 Creating ride...')
+    try {
+        console.log('🚕 Creating ride...');
 
-            const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/rides/create`, {
+        const response = await axios.post(
+            `${import.meta.env.VITE_BASE_URL}/rides/create`,
+            {
                 pickup,
                 destination
-            }, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('userToken')}` }
-            })
-
-            console.log('✅ Ride created:', response.data)
-            setRide(response.data)
-            setSubscription(prev => {
-                if (!prev) return prev
-                return {
-                    ...prev,
-                    ridesRemaining: Math.max(0, Number(prev.ridesRemaining) - 1),
-                    ridesUsed: Number(prev.ridesUsed || 0) + 1
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('userToken')}`
                 }
-            })
+            }
+        );
 
-            return response.data
-        } catch (error) {
-            console.error('❌ CREATE RIDE ERROR:', error)
-            setBookingError(error.response?.data?.message || 'Could not book this ride.')
-            setVehicleFound(false)
-            return null
-        }
+        const createdRide = response.data;
+
+        console.log('✅ Ride created:', createdRide);
+        console.log('🔐 Created ride OTP:', createdRide?.otp);
+
+        // Save ride data, but do not open the OTP panel yet
+        setRide(createdRide);
+
+        // Show the captain-search panel
+        setWaitingForDriver(false);
+        setVehicleFound(true);
+
+        // Update subscription count
+        setSubscription(prev => {
+            if (!prev) return prev;
+
+            return {
+                ...prev,
+                ridesRemaining: Math.max(
+                    0,
+                    Number(prev.ridesRemaining) - 1
+                ),
+                ridesUsed: Number(prev.ridesUsed || 0) + 1
+            };
+        });
+
+        return createdRide;
+
+    } catch (error) {
+        console.error('❌ CREATE RIDE ERROR:', error);
+
+        setBookingError(
+            error.response?.data?.message ||
+            'Could not book this ride.'
+        );
+
+        setVehicleFound(false);
+        setWaitingForDriver(false);
+
+        return null;
     }
+}
+
 
     return ( <div className='h-screen relative overflow-hidden'>
             <div className='absolute left-5 top-5 z-10 bg-white/90 rounded-lg px-3 py-1 font-bold text-lg tracking-tight'>
