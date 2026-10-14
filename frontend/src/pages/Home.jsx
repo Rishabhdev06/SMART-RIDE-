@@ -188,17 +188,21 @@ const Home = () => {
         gsap.to(vehicleFoundRef.current, { transform: vehicleFound ? 'translateY(0)' : 'translateY(100%)' })
     }, [vehicleFound])
 
-    useGSAP(() => {
-        const panel = waitingForDriverRef.current
-        if (!panel) return
+   useGSAP(() => {
+    const panel = waitingForDriverRef.current;
+    if (!panel) return;
 
-        gsap.to(panel, {
-            y: waitingForDriver ? 0 : panel.offsetHeight,
-            duration: 0.4,
-            ease: 'power2.out',
-            overwrite: 'auto'
-        })
-    }, [waitingForDriver])
+    gsap.killTweensOf(panel);
+
+    gsap.to(panel, {
+        transform: waitingForDriver
+            ? 'translateY(0%)'
+            : 'translateY(100%)',
+        duration: 0.4,
+        ease: 'power2.out',
+        overwrite: true
+    });
+}, [waitingForDriver]);
 
     async function findTrip() {
         setBookingError('')
