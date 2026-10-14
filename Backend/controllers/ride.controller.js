@@ -362,7 +362,11 @@ module.exports.confirmRide = async (req, res) => {
 // ==================================================
         // SEND RIDE CONFIRMED TO USER
         // ==================================================
-
+try {
+    const ride = await rideService.confirmRide({
+        rideId,
+        captain: req.captain
+    });
         if (!ride.user?.socketId) {
 
             console.log(
