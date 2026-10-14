@@ -16,23 +16,22 @@ import { SocketContext } from '../context/SocketContext'
 import { UserDataContext } from '../context/UserContext'
 import { SubscriptionDataContext } from '../context/SubscriptionContext'
 
-
 const Home = () => {
-    const [ pickup, setPickup ] = useState('')
-    const [ destination, setDestination ] = useState('')
-    const [ panelOpen, setPanelOpen ] = useState(false)
-    const [ vehiclePanel, setVehiclePanel ] = useState(false)
-    const [ confirmRidePanel, setConfirmRidePanel ] = useState(false)
-    const [ vehicleFound, setVehicleFound ] = useState(false)
-    const [ waitingForDriver, setWaitingForDriver ] = useState(false)
+    const [pickup, setPickup] = useState('')
+    const [destination, setDestination] = useState('')
+    const [panelOpen, setPanelOpen] = useState(false)
+    const [vehiclePanel, setVehiclePanel] = useState(false)
+    const [confirmRidePanel, setConfirmRidePanel] = useState(false)
+    const [vehicleFound, setVehicleFound] = useState(false)
+    const [waitingForDriver, setWaitingForDriver] = useState(false)
 
-    const [ pickupSuggestions, setPickupSuggestions ] = useState([])
-    const [ destinationSuggestions, setDestinationSuggestions ] = useState([])
-    const [ activeField, setActiveField ] = useState(null)
+    const [pickupSuggestions, setPickupSuggestions] = useState([])
+    const [destinationSuggestions, setDestinationSuggestions] = useState([])
+    const [activeField, setActiveField] = useState(null)
 
-    const [ ride, setRide ] = useState(null)
-    const [ bookingError, setBookingError ] = useState('')
-    const [ subscriptionLoading, setSubscriptionLoading ] = useState(true)
+    const [ride, setRide] = useState(null)
+    const [bookingError, setBookingError] = useState('')
+    const [subscriptionLoading, setSubscriptionLoading] = useState(true)
 
     const vehiclePanelRef = useRef(null)
     const confirmRidePanelRef = useRef(null)
@@ -47,7 +46,7 @@ const Home = () => {
 
     const navigate = useNavigate()
 
-    // Load subscription
+    // 1. Load subscription
     useEffect(() => {
         const loadSubscription = async () => {
             try {
@@ -61,7 +60,6 @@ const Home = () => {
                     headers: { Authorization: `Bearer ${token}` }
                 })
 
-                console.log('✅ Subscription loaded:', response.data)
                 setSubscription(response.data)
             } catch (error) {
                 console.error('❌ Failed to load subscription:', error.response?.status, error.response?.data || error.message)
@@ -72,14 +70,13 @@ const Home = () => {
         }
 
         loadSubscription()
-    }, [ setSubscription ])
+    }, [setSubscription])
 
-    // Register user with socket - re-join on every connect, including reconnects
+    // 2. Register user with socket
     useEffect(() => {
         if (!socket || !user?._id) return
 
         const joinUser = () => {
-            console.log('👤 USER SOCKET CONNECTED', socket.id, user._id)
             socket.emit('join', { userType: 'user', userId: user._id })
         }
 
@@ -89,48 +86,42 @@ const Home = () => {
         return () => {
             socket.off('connect', joinUser)
         }
-    }, [ socket, user ])
+    }, [socket, user])
 
-    // Receive ride events
-   
-useEffect(() => {
-    if (!socket) return;
+    // 3. Receive ride events (Fixed: Added proper cleanup `socket.off`)
+    useEffect(() => {
+        if (!socket) return
 
-    const handleRideConfirmed = (confirmedRide) => {
-        console.log(
-            '🚕 RIDE CONFIRMED EVENT RECEIVED:',
-            confirmedRide
-        );
-
-        if (!confirmedRide) {
-            console.error('❌ CONFIRMED RIDE IS NULL');
-            return;
+        const handleRideConfirmed = (confirmedRide) => {
+            if (!confirmedRide) return
+            setRide(confirmedRide)
+            setVehicleFound(false)
+            setWaitingForDriver(true)
         }
 
-        console.log('✅ Updating ride state and opening OTP panel');
+        const handleRideStarted = (startedRide) => {
+            setWaitingForDriver(false)
+            navigate('/riding', { state: { ride: startedRide } })
+        }
 
-        setRide(confirmedRide);
-        setVehicleFound(false);
-        setWaitingForDriver(true);
-    };
+        const handleRideEnded = () => {
+            setWaitingForDriver(false)
+            setVehicleFound(false)
+            setRide(null)
+        }
 
-    const handleRideStarted = (startedRide) => {
-        console.log('🚕 RIDE STARTED:', startedRide);
-        setWaitingForDriver(false);
-        navigate('/riding', {
-            state: { ride: startedRide }
-        });
-    };
-    const handleRideEnded = (rideData) => {
-        console.log('🏁 RIDE ENDED:', rideData);
-        setWaitingForDriver(false);
-        setVehicleFound(false);
-        setRide(null);
-    };
-    socket.on('ride-confirmed', handleRideConfirmed);
-    socket.on('ride-started', handleRideStarted);
-    socket.on('ride-ended', handleRideEnded);
+        socket.on('ride-confirmed', handleRideConfirmed)
+        socket.on('ride-started', handleRideStarted)
+        socket.on('ride-ended', handleRideEnded)
 
+        return () => {
+            socket.off('ride-confirmed', handleRideConfirmed)
+            socket.off('ride-started', handleRideStarted)
+            socket.off('ride-ended', handleRideEnded)
+        }
+    }, [socket, navigate])
+
+    // Location input handlers
     const handlePickupChange = async (e) => {
         const value = e.target.value
         setPickup(value)
@@ -174,6 +165,7 @@ useEffect(() => {
         e.preventDefault()
     }
 
+    // GSAP Animations
     useGSAP(() => {
         if (panelOpen) {
             gsap.to(panelRef.current, { height: '70%', padding: 24 })
@@ -182,31 +174,32 @@ useEffect(() => {
             gsap.to(panelRef.current, { height: '0%', padding: 0 })
             gsap.to(panelCloseRef.current, { opacity: 0 })
         }
-    }, [ panelOpen ])
+    }, [panelOpen])
 
     useGSAP(() => {
         gsap.to(vehiclePanelRef.current, { transform: vehiclePanel ? 'translateY(0)' : 'translateY(100%)' })
-    }, [ vehiclePanel ])
+    }, [vehiclePanel])
 
     useGSAP(() => {
         gsap.to(confirmRidePanelRef.current, { transform: confirmRidePanel ? 'translateY(0)' : 'translateY(100%)' })
-    }, [ confirmRidePanel ])
+    }, [confirmRidePanel])
 
     useGSAP(() => {
         gsap.to(vehicleFoundRef.current, { transform: vehicleFound ? 'translateY(0)' : 'translateY(100%)' })
-    }, [ vehicleFound ])
+    }, [vehicleFound])
 
-useGSAP(() => {
-    const panel = waitingForDriverRef.current;
-    if (!panel) return;
+    useGSAP(() => {
+        const panel = waitingForDriverRef.current
+        if (!panel) return
 
-    gsap.to(panel, {
-        y: waitingForDriver ? 0 : panel.offsetHeight,
-        duration: 0.4,
-        ease: 'power2.out',
-        overwrite: 'auto'
-    });
-}, [waitingForDriver]);
+        gsap.to(panel, {
+            y: waitingForDriver ? 0 : panel.offsetHeight,
+            duration: 0.4,
+            ease: 'power2.out',
+            overwrite: 'auto'
+        })
+    }, [waitingForDriver])
+
     async function findTrip() {
         setBookingError('')
 
@@ -229,75 +222,53 @@ useGSAP(() => {
             setBookingError('Please enter your destination.')
             return
         }
- setVehiclePanel(true)
+        
+        setVehiclePanel(true)
         setPanelOpen(false)
     }
 
-   
-async function createRide() {
-    setBookingError('');
+    async function createRide() {
+        setBookingError('')
 
-    try {
-        console.log('🚕 Creating ride...');
-
-        const response = await axios.post(
-            `${import.meta.env.VITE_BASE_URL}/rides/create`,
-            {
-                pickup,
-                destination
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('userToken')}`
+        try {
+            const response = await axios.post(
+                `${import.meta.env.VITE_BASE_URL}/rides/create`,
+                { pickup, destination },
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('userToken')}`
+                    }
                 }
-            }
-        );
+            )
 
-        const createdRide = response.data;
+            const createdRide = response.data
 
-        console.log('✅ Ride created:', createdRide);
-        console.log('🔐 Created ride OTP:', createdRide?.otp);
+            setRide(createdRide)
+            setWaitingForDriver(false)
+            setVehicleFound(true)
 
-        // Save ride data, but do not open the OTP panel yet
-        setRide(createdRide);
+            setSubscription(prev => {
+                if (!prev) return prev
+                return {
+                    ...prev,
+                    ridesRemaining: Math.max(0, Number(prev.ridesRemaining) - 1),
+                    ridesUsed: Number(prev.ridesUsed || 0) + 1
+                }
+            })
 
-        // Show the captain-search panel
-        setWaitingForDriver(false);
-        setVehicleFound(true);
+            return createdRide
 
-        // Update subscription count
-        setSubscription(prev => {
-            if (!prev) return prev;
-
-            return {
-                ...prev,
-                ridesRemaining: Math.max(
-                    0,
-                    Number(prev.ridesRemaining) - 1
-                ),
-                ridesUsed: Number(prev.ridesUsed || 0) + 1
-            };
-        });
-
-        return createdRide;
-
-    } catch (error) {
-        console.error('❌ CREATE RIDE ERROR:', error);
-
-        setBookingError(
-            error.response?.data?.message ||
-            'Could not book this ride.'
-        );
-
-        setVehicleFound(false);
-        setWaitingForDriver(false);
-
-        return null;
+        } catch (error) {
+            console.error('❌ CREATE RIDE ERROR:', error)
+            setBookingError(error.response?.data?.message || 'Could not book this ride.')
+            setVehicleFound(false)
+            setWaitingForDriver(false)
+            return null
+        }
     }
-}
 
-
-    return ( <div className='h-screen relative overflow-hidden'>
+    return (
+        <div className='h-screen relative overflow-hidden'>
             <div className='absolute left-5 top-5 z-10 bg-white/90 rounded-lg px-3 py-1 font-bold text-lg tracking-tight'>
                 Smart Ride
             </div>
@@ -306,9 +277,9 @@ async function createRide() {
                 <LiveTracking />
             </div>
 
-            <div className='flex flex-col justify-end h-screen absolute top-0 w-full'>
-                <div className='h-[30%] p-6 bg-white relative'>
-                    <h5 ref={panelCloseRef} onClick={() => setPanelOpen(false)} className='absolute opacity-0 right-6 top-6 text-2xl'>
+            <div className='flex flex-col justify-end h-screen absolute top-0 w-full pointer-events-none'>
+                <div className='h-[30%] p-6 bg-white relative pointer-events-auto'>
+                    <h5 ref={panelCloseRef} onClick={() => setPanelOpen(false)} className='absolute opacity-0 right-6 top-6 text-2xl cursor-pointer'>
                         <i className="ri-arrow-down-wide-line"></i>
                     </h5>
 
@@ -336,7 +307,7 @@ async function createRide() {
 
                     <form className='relative py-3' onSubmit={submitHandler}>
                         <div className="line absolute h-16 w-1 top-[50%] -translate-y-1/2 left-5 bg-gray-700 rounded-full"></div>
-  <input
+                        <input
                             onClick={() => { setPanelOpen(true); setActiveField('pickup') }}
                             value={pickup}
                             onChange={handlePickupChange}
@@ -364,7 +335,7 @@ async function createRide() {
                     </button>
                 </div>
 
-                <div ref={panelRef} className='bg-white h-0'>
+                <div ref={panelRef} className='bg-white h-0 pointer-events-auto'>
                     <LocationSearchPanel
                         suggestions={activeField === 'pickup' ? pickupSuggestions : destinationSuggestions}
                         setPanelOpen={setPanelOpen}
@@ -395,16 +366,7 @@ async function createRide() {
                 />
             </div>
 
-            <div ref={vehicleFoundRef} className='fixed w-full z-10 bottom-0 translate-y-full bg-white px-3 py-6 pt-12'> <ConfirmRide
-                    createRide={createRide}
-                    pickup={pickup}
-                    destination={destination}
-                    subscription={subscription}
-                    setConfirmRidePanel={setConfirmRidePanel}
-                    setVehicleFound={setVehicleFound}
-                />
-            </div>
-
+            {/* Fixed: Removed duplicate container and mapped LookingForDriver correctly */}
             <div ref={vehicleFoundRef} className='fixed w-full z-10 bottom-0 translate-y-full bg-white px-3 py-6 pt-12'>
                 <LookingForDriver
                     pickup={pickup}
@@ -414,19 +376,19 @@ async function createRide() {
                 />
             </div>
 
-          
-<div
-    ref={waitingForDriverRef}
-    className="fixed bottom-0 left-0 w-full z-20 bg-white px-3 py-6 pt-12"
->
-    <WaitingForDriver
-        ride={ride}
-        setVehicleFound={setVehicleFound}
-        setWaitingForDriver={setWaitingForDriver}
-        waitingForDriver={waitingForDriver}
-    />
-</div>
+            <div
+                ref={waitingForDriverRef}
+                className="fixed bottom-0 left-0 w-full z-20 bg-white px-3 py-6 pt-12"
+            >
+                <WaitingForDriver
+                    ride={ride}
+                    setVehicleFound={setVehicleFound}
+                    setWaitingForDriver={setWaitingForDriver}
+                    waitingForDriver={waitingForDriver}
+                />
+            </div>
         </div>
     )
 }
+
 export default Home
