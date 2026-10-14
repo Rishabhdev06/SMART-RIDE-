@@ -231,23 +231,25 @@ useEffect(() => {
         gsap.to(vehicleFoundRef.current, { transform: vehicleFound ? 'translateY(0)' : 'translateY(100%)' })
     }, [ vehicleFound ])
 
-    // Start the waiting panel off-screen. GSAP controls its position afterward.
-    useGSAP(() => {
-        if (!waitingForDriverRef.current) return
-        gsap.set(waitingForDriverRef.current, { yPercent: 100 })
-    }, [])
+useGSAP(() => {
+    const panel = waitingForDriverRef.current;
 
-    // Slide the waiting panel into view when a captain is confirmed.
-    useGSAP(() => {
-        if (!waitingForDriverRef.current) return
+    if (!panel) return;
 
-        gsap.to(waitingForDriverRef.current, {
-            yPercent: waitingForDriver ? 0 : 100,
-            duration: 0.4,
-            ease: 'power2.out',
-            overwrite: 'auto'
-        })
-    }, [ waitingForDriver ])
+    // Initially hide the panel below the screen
+    gsap.set(panel, {
+        yPercent: 100
+    });
+
+    // Animate according to the confirmation state
+    gsap.to(panel, {
+        yPercent: waitingForDriver ? 0 : 100,
+        duration: 0.4,
+        ease: 'power2.out',
+        overwrite: 'auto'
+    });
+}, [waitingForDriver]);
+
 
     async function findTrip() {
         setBookingError('')
@@ -456,17 +458,18 @@ async function createRide() {
                 />
             </div>
 
-            <div
-                ref={waitingForDriverRef}
-                className='fixed bottom-0 z-30 w-full max-h-[85dvh] overflow-y-auto overflow-x-hidden bg-white px-3 pb-6 pt-3 box-border'
-            >
-                <WaitingForDriver
-                    ride={ride}
-                    setVehicleFound={setVehicleFound}
-                    setWaitingForDriver={setWaitingForDriver}
-                    waitingForDriver={waitingForDriver}
-                />
-            </div>
+          
+<div
+    ref={waitingForDriverRef}
+    className="fixed bottom-0 left-0 z-30 w-full max-h-[85dvh] overflow-y-auto overflow-x-hidden bg-white px-3 pb-6 pt-3 box-border"
+>
+    <WaitingForDriver
+        ride={ride}
+        setVehicleFound={setVehicleFound}
+        setWaitingForDriver={setWaitingForDriver}
+        waitingForDriver={waitingForDriver}
+    />
+</div>
         </div>
     )
 }
