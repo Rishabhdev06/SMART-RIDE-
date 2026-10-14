@@ -10,7 +10,7 @@ const rideModel = require('../models/ride.model');
 // CREATE RIDE
 // ======================================================
 module.exports.createRide = async (req, res) => {
-
+ console.log("🔥 CONFIRM RIDE CONTROLLER HIT");
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
