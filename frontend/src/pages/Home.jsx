@@ -116,55 +116,27 @@ useEffect(() => {
 
     const handleRideStarted = (startedRide) => {
         console.log('🚕 RIDE STARTED:', startedRide);
-
         setWaitingForDriver(false);
         navigate('/riding', {
             state: { ride: startedRide }
         });
     };
-
     const handleRideEnded = (rideData) => {
         console.log('🏁 RIDE ENDED:', rideData);
-
         setWaitingForDriver(false);
         setVehicleFound(false);
         setRide(null);
     };
-
     socket.on('ride-confirmed', handleRideConfirmed);
     socket.on('ride-started', handleRideStarted);
     socket.on('ride-ended', handleRideEnded);
-
     return () => {
         socket.off('ride-confirmed', handleRideConfirmed);
         socket.off('ride-started', handleRideStarted);
         socket.off('ride-ended', handleRideEnded);
     };
 }, [socket, navigate]);
-
-        const handleRideStarted = (startedRide) => {
-            console.log('🚕 RIDE STARTED:', startedRide)
-            setWaitingForDriver(false)
-            navigate('/riding', { state: { ride: startedRide } })
-        }
-
-        const handleRideEnded = (rideData) => {
-            console.log('🏁 RIDE ENDED:', rideData)
-            setWaitingForDriver(false)
-            setVehicleFound(false)
-            setRide(null)
-        }
-
-        socket.on('ride-confirmed', handleRideConfirmed)
-        socket.on('ride-started', handleRideStarted)
-        socket.on('ride-ended', handleRideEnded)
-
-        return () => {
-            socket.off('ride-confirmed', handleRideConfirmed)
-            socket.off('ride-started', handleRideStarted)
-            socket.off('ride-ended', handleRideEnded)
-        }
-    }, [ socket, navigate ]);
+ 
 
     const handlePickupChange = async (e) => {
         const value = e.target.value
