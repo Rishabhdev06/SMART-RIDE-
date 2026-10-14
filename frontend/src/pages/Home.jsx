@@ -188,20 +188,29 @@ const Home = () => {
         gsap.to(vehicleFoundRef.current, { transform: vehicleFound ? 'translateY(0)' : 'translateY(100%)' })
     }, [vehicleFound])
 
-   useGSAP(() => {
+
+useGSAP(() => {
     const panel = waitingForDriverRef.current;
     if (!panel) return;
 
-    gsap.killTweensOf(panel);
-
-    gsap.to(panel, {
-        transform: waitingForDriver
-            ? 'translateY(0%)'
-            : 'translateY(100%)',
-        duration: 0.4,
-        ease: 'power2.out',
-        overwrite: true
+    // Keep the panel hidden until the captain confirms
+    gsap.set(panel, {
+        yPercent: waitingForDriver ? 0 : 100
     });
+
+    // Animate when confirmation state changes
+    if (waitingForDriver) {
+        gsap.fromTo(
+            panel,
+            { yPercent: 100 },
+            {
+                yPercent: 0,
+                duration: 0.4,
+                ease: 'power2.out',
+                overwrite: true
+            }
+        );
+    }
 }, [waitingForDriver]);
 
     async function findTrip() {
@@ -380,9 +389,9 @@ const Home = () => {
                 />
             </div>
 
-         <div
+    <div
     ref={waitingForDriverRef}
-    className="fixed w-full z-20 bottom-0 translate-y-full bg-white px-3 py-6 pt-12"
+    className="fixed bottom-0 left-0 z-30 w-full max-h-[85dvh] overflow-y-auto bg-white px-3 pb-6 pt-3 box-border"
 >
     <WaitingForDriver
         ride={ride}
