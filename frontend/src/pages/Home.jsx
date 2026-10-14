@@ -196,23 +196,12 @@ useEffect(() => {
         gsap.to(vehicleFoundRef.current, { transform: vehicleFound ? 'translateY(0)' : 'translateY(100%)' })
     }, [ vehicleFound ])
 
-// Initialize the OTP panel off-screen only once
 useGSAP(() => {
     const panel = waitingForDriverRef.current;
     if (!panel) return;
-
-    gsap.set(panel, { yPercent: 100 });
-}, []);
-
-// Slide the OTP panel up after captain confirmation
-useGSAP(() => {
-    const panel = waitingForDriverRef.current;
-    if (!panel) return;
-
-    console.log('🔎 Waiting panel state:', waitingForDriver);
 
     gsap.to(panel, {
-        yPercent: waitingForDriver ? 0 : 100,
+        y: waitingForDriver ? 0 : panel.offsetHeight,
         duration: 0.4,
         ease: 'power2.out',
         overwrite: 'auto'
