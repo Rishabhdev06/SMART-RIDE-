@@ -91,13 +91,22 @@ const Home = () => {
     // 3. Receive ride events (Fixed: Added proper cleanup `socket.off`)
     useEffect(() => {
         if (!socket) return
+const handleRideConfirmed = (confirmedRide) => {
+    console.log("🚕 RIDE CONFIRMED EVENT RECEIVED:", confirmedRide);
 
-        const handleRideConfirmed = (confirmedRide) => {
-            if (!confirmedRide) return
-            setRide(confirmedRide)
-            setVehicleFound(false)
-            setWaitingForDriver(true)
-        }
+    if (!confirmedRide) {
+        console.error("❌ confirmedRide is empty");
+        return;
+    }
+
+    setRide(confirmedRide);
+    setVehicleFound(false);
+    setWaitingForDriver(true);
+
+    console.log("✅ OTP panel requested to open");
+};
+        console.log("🔌 Socket connected:", socket.connected);
+console.log("👤 Current user ID:", user?._id);
 
         const handleRideStarted = (startedRide) => {
             setWaitingForDriver(false)
