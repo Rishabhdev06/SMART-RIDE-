@@ -296,75 +296,70 @@ module.exports.getEstimatedValue = async (req, res) => {
 // ======================================================
 
 module.exports.confirmRide = async (req, res) => {
-
-    const errors =
-        validationResult(req);
-
+    const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
-
         return res.status(400).json({
             errors: errors.array()
         });
-
     }
 
-
-    if (!req.captain || !req.captain._id) {
-
+    if (!req.captain?._id) {
         return res.status(401).json({
             message: 'Captain authentication required.'
         });
-
     }
 
-
-    const {
-        rideId
-    } = req.body;
-
+    const { rideId } = req.body;
 
     if (!rideId) {
-
         return res.status(400).json({
             message: 'Ride ID is required.'
         });
-
     }
 
-
     try {
+        // Confirm the ride only once
+        const ride = await rideService.confirmRide({
+            rideId,
+            captain: req.captain
+        });
 
-        // ==================================================
-        // CONFIRM RIDE THROUGH SERVICE
-        // ==================================================
-const ride = await rideService.confirmRide({
-    rideId,
-    captain: req.captain
-});try {
-    const ride = await rideService.confirmRide({
-        rideId,
-        captain: req.captain
-    });
+        const userSocketId = ride.user?.socketId;
 
-    if (!ride.user?.socketId) {
-        console.log('❌ USER SOCKET ID IS MISSING');
-    } else {
-        sendMessageToSocketId(ride.user.socketId, {
+        console.log('Ride confirmed:', ride._id);
+        console.log('User ID:', ride.user?._id);
+        console.log('User socket ID:', userSocketId);
+
+        if (!userSocketId) {
+            console.error('❌ USER SOCKET ID IS MISSING');
+
+            return res.status(200).json(ride);
+        }
+
+        const sent = sendMessageToSocketId(userSocketId, {
             event: 'ride-confirmed',
             data: ride
         });
+
+        console.log(
+            sent
+                ? '✅ RIDE-CONFIRMED SENT'
+                : '❌ RIDE-CONFIRMED FAILED'
+        );
+
+        return res.status(200).json(ride);
+
+    } catch (err) {
+        console.error('❌ CONFIRM RIDE ERROR:', err);
+
+        return res.status(500).json({
+            message: err.message
+        });
     }
+};
 
-    return res.status(200).json(ride);
-} catch (err) {
-    console.error('❌ CONFIRM RIDE ERROR:', err);
-
-    return res.status(500).json({
-        message: err.message
-    });
-}
-        // ==================================================
+// ==================================================
         // SEND RIDE CONFIRMED TO USER
         // ==================================================
 
