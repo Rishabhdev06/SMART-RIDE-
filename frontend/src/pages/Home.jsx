@@ -393,7 +393,7 @@ useGSAP(() => {
 
     <div
     ref={waitingForDriverRef}
-    className="fixed bottom-0 left-0 z-30 w-full max-h-[85dvh] overflow-y-auto bg-white px-3 pb-6 pt-3 box-border"
+    className="fixed bottom-0 left-0 z-30 w-full max-h-[85dvh] overflow-y-auto overflow-x-hidden  bg-white px-3 pb-6 pt-3 box-border"
 >
     <WaitingForDriver
         ride={ride}
