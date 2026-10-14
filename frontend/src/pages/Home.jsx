@@ -189,28 +189,18 @@ const Home = () => {
     }, [vehicleFound])
 
 
+
 useGSAP(() => {
     const panel = waitingForDriverRef.current;
     if (!panel) return;
 
-    // Keep the panel hidden until the captain confirms
-    gsap.set(panel, {
-        yPercent: waitingForDriver ? 0 : 100
+    // Captain confirmation ke baad panel ko screen par lao
+    gsap.to(panel, {
+        y: waitingForDriver ? 0 : panel.offsetHeight,
+        duration: 0.4,
+        ease: 'power2.out',
+        overwrite: true
     });
-
-    // Animate when confirmation state changes
-    if (waitingForDriver) {
-        gsap.fromTo(
-            panel,
-            { yPercent: 100 },
-            {
-                yPercent: 0,
-                duration: 0.4,
-                ease: 'power2.out',
-                overwrite: true
-            }
-        );
-    }
 }, [waitingForDriver]);
 
     async function findTrip() {
