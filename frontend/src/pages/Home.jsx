@@ -94,7 +94,6 @@ const Home = () => {
     // Receive ride events
     useEffect(() => {
         if (!socket) return
-
         const handleRideConfirmed = (confirmedRide) => {
             console.log('🚕 RIDE CONFIRMED EVENT RECEIVED:', confirmedRide)
 
@@ -135,7 +134,6 @@ const Home = () => {
     const handlePickupChange = async (e) => {
         const value = e.target.value
         setPickup(value)
-
         if (!value.trim()) {
             setPickupSuggestions([])
             return
@@ -198,8 +196,22 @@ const Home = () => {
         gsap.to(vehicleFoundRef.current, { transform: vehicleFound ? 'translateY(0)' : 'translateY(100%)' })
     }, [ vehicleFound ])
 
+    // Start the waiting panel off-screen. GSAP controls its position afterward.
     useGSAP(() => {
-        gsap.to(waitingForDriverRef.current, { transform: waitingForDriver ? 'translateY(0)' : 'translateY(100%)', duration: 0.4 })
+        if (!waitingForDriverRef.current) return
+        gsap.set(waitingForDriverRef.current, { yPercent: 100 })
+    }, [])
+
+    // Slide the waiting panel into view when a captain is confirmed.
+    useGSAP(() => {
+        if (!waitingForDriverRef.current) return
+
+        gsap.to(waitingForDriverRef.current, {
+            yPercent: waitingForDriver ? 0 : 100,
+            duration: 0.4,
+            ease: 'power2.out',
+            overwrite: 'auto'
+        })
     }, [ waitingForDriver ])
 
     async function findTrip() {
@@ -224,8 +236,7 @@ const Home = () => {
             setBookingError('Please enter your destination.')
             return
         }
-
-        setVehiclePanel(true)
+ setVehiclePanel(true)
         setPanelOpen(false)
     }
 
@@ -243,7 +254,7 @@ const Home = () => {
             })
 
             console.log('✅ Ride created:', response.data)
-             setRide(response.data)
+            setRide(response.data)
             setSubscription(prev => {
                 if (!prev) return prev
                 return {
@@ -262,8 +273,7 @@ const Home = () => {
         }
     }
 
-    return (
-        <div className='h-screen relative overflow-hidden'>
+    return ( <div className='h-screen relative overflow-hidden'>
             <div className='absolute left-5 top-5 z-10 bg-white/90 rounded-lg px-3 py-1 font-bold text-lg tracking-tight'>
                 Smart Ride
             </div>
@@ -302,8 +312,7 @@ const Home = () => {
 
                     <form className='relative py-3' onSubmit={submitHandler}>
                         <div className="line absolute h-16 w-1 top-[50%] -translate-y-1/2 left-5 bg-gray-700 rounded-full"></div>
-
-                        <input
+  <input
                             onClick={() => { setPanelOpen(true); setActiveField('pickup') }}
                             value={pickup}
                             onChange={handlePickupChange}
@@ -362,6 +371,16 @@ const Home = () => {
                 />
             </div>
 
+            <div ref={vehicleFoundRef} className='fixed w-full z-10 bottom-0 translate-y-full bg-white px-3 py-6 pt-12'> <ConfirmRide
+                    createRide={createRide}
+                    pickup={pickup}
+                    destination={destination}
+                    subscription={subscription}
+                    setConfirmRidePanel={setConfirmRidePanel}
+                    setVehicleFound={setVehicleFound}
+                />
+            </div>
+
             <div ref={vehicleFoundRef} className='fixed w-full z-10 bottom-0 translate-y-full bg-white px-3 py-6 pt-12'>
                 <LookingForDriver
                     pickup={pickup}
@@ -371,7 +390,10 @@ const Home = () => {
                 />
             </div>
 
-            <div ref={waitingForDriverRef} className='fixed w-full z-20 bottom-0 translate-y-full bg-white px-3 py-6 pt-12'>
+            <div
+                ref={waitingForDriverRef}
+                className='fixed bottom-0 z-30 w-full max-h-[85dvh] overflow-y-auto overflow-x-hidden bg-white px-3 pb-6 pt-3 box-border'
+            >
                 <WaitingForDriver
                     ride={ride}
                     setVehicleFound={setVehicleFound}
