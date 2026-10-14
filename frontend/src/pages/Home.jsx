@@ -373,7 +373,7 @@ const Home = () => {
     maxHeight: "85dvh",
     boxSizing: "border-box",
     transform: waitingForDriver
-      ? "translateY(0)"
+      ? "translateY(0px)"
       : "translateY(100%)",
     transition: "transform 400ms ease-in-out",
     visibility: waitingForDriver ? "visible" : "hidden",
