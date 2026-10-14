@@ -1,4 +1,4 @@
-```jsx
+
 import React from 'react';
 
 const WaitingForDriver = (props) => {
@@ -128,4 +128,4 @@ const WaitingForDriver = (props) => {
 };
 
 export default WaitingForDriver;
-```
+
