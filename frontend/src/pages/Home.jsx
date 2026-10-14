@@ -231,17 +231,21 @@ useEffect(() => {
         gsap.to(vehicleFoundRef.current, { transform: vehicleFound ? 'translateY(0)' : 'translateY(100%)' })
     }, [ vehicleFound ])
 
+// Initialize the OTP panel off-screen only once
 useGSAP(() => {
     const panel = waitingForDriverRef.current;
-
     if (!panel) return;
 
-    // Initially hide the panel below the screen
-    gsap.set(panel, {
-        yPercent: 100
-    });
+    gsap.set(panel, { yPercent: 100 });
+}, []);
 
-    // Animate according to the confirmation state
+// Slide the OTP panel up after captain confirmation
+useGSAP(() => {
+    const panel = waitingForDriverRef.current;
+    if (!panel) return;
+
+    console.log('🔎 Waiting panel state:', waitingForDriver);
+
     gsap.to(panel, {
         yPercent: waitingForDriver ? 0 : 100,
         duration: 0.4,
@@ -249,8 +253,6 @@ useGSAP(() => {
         overwrite: 'auto'
     });
 }, [waitingForDriver]);
-
-
     async function findTrip() {
         setBookingError('')
 
