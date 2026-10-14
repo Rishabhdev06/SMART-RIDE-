@@ -1,126 +1,122 @@
-import React from 'react'
+```jsx
+import React from 'react';
 
 const WaitingForDriver = (props) => {
+    const ride = props.ride;
+    const otp = ride?.otp;
 
-    console.log('🚕 WaitingForDriver RIDE:', props.ride)
-    console.log('🔐 WaitingForDriver OTP:', props.ride?.otp)
+    console.log('🚕 WaitingForDriver RIDE:', ride);
+    console.log('🔐 WaitingForDriver OTP:', otp);
 
     return (
-        <div>
+        <div className="relative w-full min-w-0 box-border">
 
             {/* Close button */}
-            <h5
-                className='p-1 text-center w-[93%] absolute top-0'
-                onClick={() => {
-                    props.setWaitingForDriver(false)
-                }}
-            >
-                <i className="text-3xl text-gray-200 ri-arrow-down-wide-line"></i>
-            </h5>
-
+            <div className="sticky top-0 z-20 -mx-3 mb-3 flex justify-center bg-white py-1">
+                <button
+                    type="button"
+                    aria-label="Close ride details"
+                    className="flex w-full justify-center"
+                    onClick={() => props.setWaitingForDriver(false)}
+                >
+                    <i className="text-3xl text-gray-400 ri-arrow-down-wide-line"></i>
+                </button>
+            </div>
 
             {/* Captain information */}
-            <div className='flex items-center justify-between'>
+            <div className="flex min-w-0 items-center justify-between gap-3">
 
-                <i className="ri-car-line text-5xl"></i>
+                <i className="ri-car-line shrink-0 text-5xl"></i>
 
-                <div className='text-right'>
-
-                    <h2 className='text-lg font-medium capitalize'>
-                        {props.ride?.captain?.fullname?.firstname || 'Captain'}
+                <div className="min-w-0 flex-1 text-right">
+                    <h2 className="break-words text-lg font-medium capitalize">
+                        {ride?.captain?.fullname?.firstname || 'Captain'}
                     </h2>
 
-                    <h4 className='text-xl font-semibold -mt-1 -mb-1'>
-                        {props.ride?.captain?.vehicle?.plate || '---'}
+                    <h4 className="break-words text-xl font-semibold">
+                        {ride?.captain?.vehicle?.plate || '---'}
                     </h4>
 
-                    <p className='text-sm text-gray-600 capitalize'>
-                        {props.ride?.vehicleType || ''}
+                    <p className="text-sm text-gray-600 capitalize">
+                        {ride?.vehicleType || ''}
                     </p>
-
                 </div>
 
             </div>
 
+            {/* OTP card */}
+            <div className="mt-5 w-full min-w-0 box-border rounded-xl border border-yellow-300 bg-yellow-50 p-4 text-center">
 
-            {/* OTP */}
-            <div className='mt-5 bg-yellow-50 border border-yellow-300 rounded-xl p-4 text-center'>
-
-                <p className='text-sm font-medium text-gray-600'>
+                <p className="text-sm font-medium text-gray-600">
                     🔐 Ride Verification OTP
                 </p>
 
-                <p className='text-3xl font-bold tracking-[0.3em] mt-2'>
-                    {props.ride?.otp || '------'}
+                <p className="mt-2 break-words font-mono text-3xl font-bold tracking-[0.2em]">
+                    {otp !== undefined && otp !== null && otp !== ''
+                        ? otp
+                        : '------'}
                 </p>
 
-                <p className='text-sm text-gray-600 mt-2'>
+                <p className="mt-2 text-sm text-gray-600">
                     Tell this OTP to your captain when they arrive.
                 </p>
 
-                <p className='text-xs text-red-500 mt-1'>
+                <p className="mt-1 text-xs text-red-500">
                     Do not share this OTP before the captain arrives.
                 </p>
 
             </div>
 
-
             {/* Ride details */}
-            <div className='flex gap-2 justify-between flex-col items-center'>
+            <div className="mt-5 w-full min-w-0">
 
-                <div className='w-full mt-5'>
+                {/* Pickup */}
+                <div className="flex min-w-0 items-center gap-4 border-b-2 p-3">
 
-                    {/* Pickup */}
-                    <div className='flex items-center gap-5 p-3 border-b-2'>
+                    <i className="ri-map-pin-user-fill shrink-0 text-lg"></i>
 
-                        <i className="ri-map-pin-user-fill"></i>
+                    <div className="min-w-0 flex-1">
+                        <h3 className="text-lg font-medium">
+                            Pickup
+                        </h3>
 
-                        <div>
-                            <h3 className='text-lg font-medium'>
-                                Pickup
-                            </h3>
-
-                            <p className='text-sm -mt-1 text-gray-600'>
-                                {props.ride?.pickup}
-                            </p>
-                        </div>
-
+                        <p className="break-words text-sm text-gray-600">
+                            {ride?.pickup || 'Pickup unavailable'}
+                        </p>
                     </div>
 
+                </div>
 
-                    {/* Drop */}
-                    <div className='flex items-center gap-5 p-3 border-b-2'>
+                {/* Drop */}
+                <div className="flex min-w-0 items-center gap-4 border-b-2 p-3">
 
-                        <i className="text-lg ri-map-pin-2-fill"></i>
+                    <i className="ri-map-pin-2-fill shrink-0 text-lg"></i>
 
-                        <div>
-                            <h3 className='text-lg font-medium'>
-                                Drop
-                            </h3>
+                    <div className="min-w-0 flex-1">
+                        <h3 className="text-lg font-medium">
+                            Drop
+                        </h3>
 
-                            <p className='text-sm -mt-1 text-gray-600'>
-                                {props.ride?.destination}
-                            </p>
-                        </div>
-
+                        <p className="break-words text-sm text-gray-600">
+                            {ride?.destination || 'Destination unavailable'}
+                        </p>
                     </div>
 
+                </div>
 
-                    {/* Subscription */}
-                    <div className='flex items-center gap-5 p-3'>
+                {/* Subscription */}
+                <div className="flex min-w-0 items-center gap-4 p-3">
 
-                        <i className="ri-vip-crown-line"></i>
+                    <i className="ri-vip-crown-line shrink-0 text-lg"></i>
 
-                        <div>
-                            <h3 className='text-lg font-medium'>
-                                Covered by your plan
-                            </h3>
+                    <div className="min-w-0 flex-1">
+                        <h3 className="text-lg font-medium">
+                            Covered by your plan
+                        </h3>
 
-                            <p className='text-sm -mt-1 text-gray-600'>
-                                No fare due
-                            </p>
-                        </div>
-
+                        <p className="text-sm text-gray-600">
+                            No fare due
+                        </p>
                     </div>
 
                 </div>
@@ -128,7 +124,8 @@ const WaitingForDriver = (props) => {
             </div>
 
         </div>
-    )
-}
+    );
+};
 
-export default WaitingForDriver
+export default WaitingForDriver;
+```
