@@ -367,19 +367,24 @@ const Home = () => {
             </div>
 
 <div
-    ref={waitingForDriverRef}
-    className={`fixed bottom-0 left-0 z-30 w-full max-h-[85dvh] overflow-y-auto overflow-x-hidden bg-white px-3 pb-6 pt-3 box-border transition-transform duration-400 ease-out ${
-        waitingForDriver
-            ? 'translate-y-0'
-            : 'translate-y-full'
-    }`}
+  ref={waitingForDriverRef}
+  className="fixed bottom-0 left-0 z-30 w-full overflow-y-auto bg-white px-3 pb-6 pt-3"
+  style={{
+    maxHeight: "85dvh",
+    boxSizing: "border-box",
+    transform: waitingForDriver
+      ? "translateY(0)"
+      : "translateY(100%)",
+    transition: "transform 400ms ease-in-out",
+    visibility: waitingForDriver ? "visible" : "hidden",
+  }}
 >
-    <WaitingForDriver
-        ride={ride}
-        setVehicleFound={setVehicleFound}
-        setWaitingForDriver={setWaitingForDriver}
-        waitingForDriver={waitingForDriver}
-    />
+  <WaitingForDriver
+    ride={ride}
+    setVehicleFound={setVehicleFound}
+    setWaitingForDriver={setWaitingForDriver}
+    waitingForDriver={waitingForDriver}
+  />
 </div>
         </div>
     )
