@@ -273,6 +273,13 @@ console.log("Captain ID:", captain._id);
 const existingRide = await rideModel
     .findById(rideId)
     .select("_id status captain");
+    const existingRide = await rideModel.findById(rideId);
+
+console.log("Requested ID:", String(rideId));
+console.log("Found ID:", existingRide?._id?.toString());
+console.log("Status before update:", existingRide?.status);
+console.log("Database:", rideModel.db.name);
+console.log("Collection:", rideModel.collection.name);
 
 console.log("Actual ride in database:", existingRide);
     // Accept only a pending ride
