@@ -417,7 +417,7 @@ async function createRide() {
           
 <div
     ref={waitingForDriverRef}
-    className="fixed bottom-0 left-0 z-30 w-full max-h-[85dvh] overflow-y-auto overflow-x-hidden bg-white px-3 pb-6 pt-3 box-border"
+    className="fixed bottom-0 left-0 w-full z-20 bg-white px-3 py-6 pt-12"
 >
     <WaitingForDriver
         ride={ride}
@@ -429,5 +429,4 @@ async function createRide() {
         </div>
     )
 }
-
-export default Home;
+export default Home
