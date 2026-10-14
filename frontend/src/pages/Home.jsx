@@ -430,4 +430,4 @@ async function createRide() {
     )
 }
 
-export default Home
+export default Home;
