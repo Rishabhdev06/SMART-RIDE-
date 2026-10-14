@@ -380,17 +380,17 @@ const Home = () => {
                 />
             </div>
 
-            <div
-                ref={waitingForDriverRef}
-                className="fixed bottom-0 left-0 w-full z-20 bg-white px-3 py-6 pt-12"
-            >
-                <WaitingForDriver
-                    ride={ride}
-                    setVehicleFound={setVehicleFound}
-                    setWaitingForDriver={setWaitingForDriver}
-                    waitingForDriver={waitingForDriver}
-                />
-            </div>
+         <div
+    ref={waitingForDriverRef}
+    className="fixed w-full z-20 bottom-0 translate-y-full bg-white px-3 py-6 pt-12"
+>
+    <WaitingForDriver
+        ride={ride}
+        setVehicleFound={setVehicleFound}
+        setWaitingForDriver={setWaitingForDriver}
+        waitingForDriver={waitingForDriver}
+    />
+</div>
         </div>
     )
 }
