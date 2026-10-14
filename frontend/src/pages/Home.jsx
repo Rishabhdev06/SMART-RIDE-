@@ -188,19 +188,31 @@ const Home = () => {
         gsap.to(vehicleFoundRef.current, { transform: vehicleFound ? 'translateY(0)' : 'translateY(100%)' })
     }, [vehicleFound])
 
-
-
 useGSAP(() => {
     const panel = waitingForDriverRef.current;
     if (!panel) return;
 
-    // Captain confirmation ke baad panel ko screen par lao
-    gsap.to(panel, {
-        y: waitingForDriver ? 0 : panel.offsetHeight,
-        duration: 0.4,
-        ease: 'power2.out',
-        overwrite: true
+    // Stop any previous animation
+    gsap.killTweensOf(panel);
+
+    // Move the panel according to its current state
+    gsap.set(panel, {
+        y: waitingForDriver ? 0 : panel.offsetHeight
     });
+
+    // Animate upward only after confirmation
+    if (waitingForDriver) {
+        gsap.fromTo(
+            panel,
+            { y: panel.offsetHeight },
+            {
+                y: 0,
+                duration: 0.4,
+                ease: 'power2.out',
+                overwrite: true
+            }
+        );
+    }
 }, [waitingForDriver]);
 
     async function findTrip() {
