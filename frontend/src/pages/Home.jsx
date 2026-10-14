@@ -164,7 +164,7 @@ useEffect(() => {
             socket.off('ride-started', handleRideStarted)
             socket.off('ride-ended', handleRideEnded)
         }
-    }, [ socket, navigate ])
+    }, [ socket, navigate ]);
 
     const handlePickupChange = async (e) => {
         const value = e.target.value
