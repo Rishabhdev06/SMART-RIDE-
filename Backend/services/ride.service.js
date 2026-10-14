@@ -267,7 +267,14 @@ module.exports.confirmRide = async ({
         '======================================'
     );
 
+console.log("Requested rideId:", rideId);
+console.log("Captain ID:", captain._id);
 
+const existingRide = await rideModel
+    .findById(rideId)
+    .select("_id status captain");
+
+console.log("Actual ride in database:", existingRide);
     // Accept only a pending ride
 
     const updatedRide =
