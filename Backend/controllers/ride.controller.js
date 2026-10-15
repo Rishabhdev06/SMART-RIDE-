@@ -145,6 +145,7 @@ module.exports.getEstimatedValue = async (req, res) => {
 
 // CONFIRM RIDE — CAPTAIN ACCEPTS THE RIDE
 module.exports.confirmRide = async (req, res) => {
+        console.log("🔥 CONFIRM RIDE CONTROLLER HIT");
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
